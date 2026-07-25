@@ -151,3 +151,37 @@ export function Td({ children, mono }: { children: React.ReactNode; mono?: boole
     <td className={`border-b border-line-white/5 py-2.5 ${mono ? "font-mono" : ""}`}>{children}</td>
   );
 }
+
+export interface Stat {
+  label: string;
+  value: string;
+  icon: string;
+  /** Any CSS colour — drives the underline that distinguishes the tiles. */
+  accent: string;
+}
+
+/** The player dashboard's tile grid: four across, wrapping to as many rows as
+ *  it needs. KpiRow stays as-is because owner and admin depend on its look. */
+export function StatGrid({ items }: { items: Stat[] }) {
+  return (
+    <div className="mb-7 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {items.map((s) => (
+        <div key={s.label} className="panel flex flex-col">
+          <span
+            aria-hidden
+            className="mb-3 flex h-8 w-8 items-center justify-center rounded-[10px] bg-card text-[15px]"
+          >
+            {s.icon}
+          </span>
+          <p className="text-[11px] uppercase tracking-[0.05em] text-muted">{s.label}</p>
+          <p className="mt-1 font-mono text-[24px] font-semibold">{s.value}</p>
+          <span
+            aria-hidden
+            className="mt-3 block h-0.5 w-full rounded-full opacity-70"
+            style={{ backgroundColor: s.accent }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
