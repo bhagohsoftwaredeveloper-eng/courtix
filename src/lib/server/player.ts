@@ -59,3 +59,49 @@ export async function getCurrentPlayer(): Promise<Player | null> {
     memberSince: profile ? monthYearLabel(profile.memberSince) : "",
   };
 }
+
+/** The editable shape of a player's profile, as the form needs it. */
+export interface ProfileFormValues {
+  name: string;
+  /** Read-only in the UI: it is the login identifier. */
+  email: string;
+  phone: string;
+  homeCityId: string;
+  skill: "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
+  rating: string;
+  sportIds: string[];
+}
+
+export async function getProfileForm(): Promise<ProfileFormValues | null> {
+  const session = await getSession();
+  if (!session) return null;
+
+  const user = await db.user.findUnique({
+    where: { id: session.id },
+    select: {
+      name: true,
+      email: true,
+      phone: true,
+      playerProfile: {
+        select: {
+          skill: true,
+          rating: true,
+          homeCityId: true,
+          favourites: { select: { sportId: true } },
+        },
+      },
+    },
+  });
+  if (!user) return null;
+
+  const p = user.playerProfile;
+  return {
+    name: user.name,
+    email: user.email,
+    phone: user.phone ?? "",
+    homeCityId: p?.homeCityId ?? "",
+    skill: p?.skill ?? "BEGINNER",
+    rating: p?.rating ? String(p.rating) : "",
+    sportIds: p?.favourites.map((f) => f.sportId) ?? [],
+  };
+}
