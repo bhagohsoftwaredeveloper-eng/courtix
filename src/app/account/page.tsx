@@ -58,7 +58,7 @@ export default async function AccountDashboard() {
 
       <div className="grid gap-[18px] xl:grid-cols-2">
         <Panel title="Calories Burned" action={<span className="font-mono text-[10.5px] text-muted">this month</span>}>
-          {stats.totalSessions === 0 ? (
+          {stats.sessionsThisMonth === 0 ? (
             <div className="py-10 text-center">
               <p className="mb-1.5 font-sans text-[14px] font-extrabold">No activity data yet</p>
               <p className="text-[12.5px] text-muted">
@@ -72,8 +72,8 @@ export default async function AccountDashboard() {
                 <span className="ml-1.5 text-[13px] text-muted">kcal</span>
               </p>
               <p className="mt-1.5 text-[12.5px] text-muted">
-                Across {stats.totalSessions} session{stats.totalSessions === 1 ? "" : "s"} ·{" "}
-                {stats.hoursPlayed}h on court.
+                Across {stats.sessionsThisMonth} session{stats.sessionsThisMonth === 1 ? "" : "s"} ·{" "}
+                {stats.hoursThisMonth}h on court.
               </p>
             </>
           )}

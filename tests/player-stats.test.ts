@@ -234,6 +234,48 @@ describe("playerStats week streak", () => {
   });
 });
 
+describe("playerStats month-scoped session/hour counts", () => {
+  // The Calories Burned panel's caption reports "this month" alongside a
+  // month-scoped headline figure, so it needs its own period-scoped session
+  // and hour counts — not the all-time totals, which read as a mismatch
+  // when a player has history but nothing this month.
+  it("scopes sessionsThisMonth and hoursThisMonth to the current month, leaving all-time totals alone", () => {
+    const sessions: PlayerSession[] = [
+      { kind: "booking", sport: "pickleball", courtId: 1, date: "2026-07-20", hours: 2, past: true, played: true },
+      { kind: "booking", sport: "basketball", courtId: 2, date: "2026-06-20", hours: 3, past: true, played: true },
+    ];
+    const s = playerStats(sessions, TODAY);
+    expect(s.sessionsThisMonth).toBe(1);
+    expect(s.hoursThisMonth).toBe(2);
+    expect(s.totalSessions).toBe(2);
+    expect(s.hoursPlayed).toBe(5);
+  });
+
+  it("excludes an unplayed session this month from sessionsThisMonth and hoursThisMonth", () => {
+    const sessions: PlayerSession[] = [
+      { kind: "booking", sport: "pickleball", courtId: 1, date: "2026-07-20", hours: 2, past: true, played: false },
+    ];
+    const s = playerStats(sessions, TODAY);
+    expect(s.sessionsThisMonth).toBe(0);
+    expect(s.hoursThisMonth).toBe(0);
+  });
+
+  it("excludes a future-dated session this month from sessionsThisMonth and hoursThisMonth", () => {
+    const sessions: PlayerSession[] = [
+      { kind: "booking", sport: "pickleball", courtId: 1, date: "2026-07-28", hours: 2, past: false, played: true },
+    ];
+    const s = playerStats(sessions, TODAY);
+    expect(s.sessionsThisMonth).toBe(0);
+    expect(s.hoursThisMonth).toBe(0);
+  });
+
+  it("is 0 for both fields when the player has no sessions", () => {
+    const s = playerStats([], TODAY);
+    expect(s.sessionsThisMonth).toBe(0);
+    expect(s.hoursThisMonth).toBe(0);
+  });
+});
+
 describe("playerStats with unplayed bookings", () => {
   // One booking actually happened; the other is still an unpaid hold. Only
   // the confirmed one may count as court time.

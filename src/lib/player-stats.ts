@@ -67,6 +67,8 @@ export interface PlayerStats {
   calThisMonth: number;
   avgCalPerSession: number;
   courtsExplored: number;
+  sessionsThisMonth: number;
+  hoursThisMonth: number;
 }
 
 /** Normalises both activity sources into one list scoped to this player. */
@@ -144,6 +146,12 @@ export function playerStats(sessions: PlayerSession[], today: string): PlayerSta
   const totalSessions = done.length;
   const totalCal = done.reduce((n, s) => n + caloriesFor(s.sport, s.hours), 0);
   const month = today.slice(0, 7);
+  // The Calories Burned panel is scoped to "this month" throughout — its
+  // headline figure (calThisMonth) and its caption must agree, so the
+  // caption's session count and hours need the same month filter rather
+  // than the all-time totals below. Filtered once and reused for both,
+  // instead of filtering `done` three times over.
+  const thisMonth = done.filter((s) => s.date.slice(0, 7) === month);
 
   return {
     totalBookings: bookings.length,
@@ -152,11 +160,11 @@ export function playerStats(sessions: PlayerSession[], today: string): PlayerSta
     hoursPlayed: done.reduce((n, s) => n + s.hours, 0),
     totalSessions,
     weekStreak: weekStreak(done, today),
-    calThisMonth: done
-      .filter((s) => s.date.slice(0, 7) === month)
-      .reduce((n, s) => n + caloriesFor(s.sport, s.hours), 0),
+    calThisMonth: thisMonth.reduce((n, s) => n + caloriesFor(s.sport, s.hours), 0),
     // Guard the division: a new player has no sessions at all.
     avgCalPerSession: totalSessions === 0 ? 0 : Math.round(totalCal / totalSessions),
     courtsExplored: new Set(sessions.map((s) => s.courtId)).size,
+    sessionsThisMonth: thisMonth.length,
+    hoursThisMonth: thisMonth.reduce((n, s) => n + s.hours, 0),
   };
 }
