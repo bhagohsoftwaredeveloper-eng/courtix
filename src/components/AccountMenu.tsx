@@ -52,7 +52,7 @@ export function AccountMenu({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        aria-haspopup="menu"
+        aria-controls="account-menu-panel"
         aria-label={`Account menu for ${account.name}`}
         className="flex h-9 w-9 items-center justify-center rounded-full border border-line-white/20 bg-card font-mono text-[12px] font-semibold text-ball-yellow"
       >
@@ -60,8 +60,12 @@ export function AccountMenu({
       </button>
 
       {open && (
+        // Implemented as a disclosure (expandable region of navigation links) rather than
+        // role="menu", which would promise arrow-key navigation and other menu semantics
+        // that this component does not implement. WAI-ARIA APG recommends disclosure
+        // pattern for navigation dropdowns.
         <div
-          role="menu"
+          id="account-menu-panel"
           className="absolute right-0 top-11 z-[110] w-[260px] overflow-hidden rounded-[14px] border border-line-white/12 bg-court-deep shadow-2xl"
         >
           <div className="border-b border-line-white/8 px-4 py-3.5">
@@ -74,7 +78,6 @@ export function AccountMenu({
               <Link
                 key={item.href}
                 href={item.href}
-                role="menuitem"
                 className="block px-4 py-2.5 text-[13px] font-semibold text-muted transition-colors hover:bg-card hover:text-line-white"
               >
                 {item.label}
@@ -85,7 +88,6 @@ export function AccountMenu({
           <form action={logoutAction} className="border-t border-line-white/8">
             <button
               type="submit"
-              role="menuitem"
               className="w-full px-4 py-3 text-left text-[13px] font-bold text-[#ff6b6b] transition-colors hover:bg-card"
             >
               Sign Out
