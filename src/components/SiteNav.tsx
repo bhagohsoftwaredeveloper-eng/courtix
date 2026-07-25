@@ -12,7 +12,7 @@ const LINKS = [
   { href: "/list-your-court", label: "List your court" },
 ];
 
-export function SiteNav() {
+export function SiteNav({ account }: { account: { name: string; href: string } | null }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -42,9 +42,15 @@ export function SiteNav() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Link href="/player-home" className="btn btn-ghost hidden sm:inline-flex">
-            Sign in
-          </Link>
+          {account ? (
+            <Link href={account.href} className="btn btn-ghost hidden sm:inline-flex">
+              {account.name.split(" ")[0]}
+            </Link>
+          ) : (
+            <Link href="/login" className="btn btn-ghost hidden sm:inline-flex">
+              Sign in
+            </Link>
+          )}
           <Link href="/courts" className="btn btn-solid">
             Book a court
           </Link>
@@ -84,10 +90,10 @@ export function SiteNav() {
               </Link>
             ))}
             <Link
-              href="/player-home"
+              href={account ? account.href : "/login"}
               className="rounded-lg px-3 py-3 text-[15px] font-semibold text-muted hover:bg-card hover:text-line-white sm:hidden"
             >
-              Sign in
+              {account ? account.name.split(" ")[0] : "Sign in"}
             </Link>
             <Link href="/waitlist" className="btn btn-solid mt-2 w-full">
               Join the waitlist

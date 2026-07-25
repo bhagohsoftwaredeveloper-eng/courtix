@@ -6,10 +6,10 @@ import { JoinOpenPlay } from "@/components/JoinOpenPlay";
 import { OpenPlayCard, SeatMeter, SkillChip } from "@/components/OpenPlayCard";
 import { getCourt } from "@/lib/data/courts";
 import { allOpenPlays, getOpenPlay } from "@/lib/data/openplays";
-import { getCurrentPlayer } from "@/lib/data/player";
 import { sportName } from "@/lib/data/sports";
 import { dateLabelLong, peso, rangeLabel } from "@/lib/format";
 import { openPlayStatus, openPlayStatuses } from "@/lib/server/openplay-status";
+import { getCurrentPlayer } from "@/lib/server/player";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +35,8 @@ export default async function OpenPlayPage({ params }: { params: Promise<{ id: s
 
   const status = await openPlayStatus(play);
   const court = getCourt(play.courtId);
-  const player = getCurrentPlayer();
+  // Public page: a signed-out visitor just gets an empty form.
+  const player = await getCurrentPlayer();
 
   const others = allOpenPlays()
     .filter((p) => p.id !== play.id && p.sport === play.sport)
@@ -139,7 +140,11 @@ export default async function OpenPlayPage({ params }: { params: Promise<{ id: s
           <JoinOpenPlay
             openPlayId={play.id}
             full={status.isFull}
-            defaults={{ name: player.name, email: player.email, phone: player.phone }}
+            defaults={{
+              name: player?.name ?? "",
+              email: player?.email ?? "",
+              phone: player?.phone ?? "",
+            }}
           />
         </div>
 

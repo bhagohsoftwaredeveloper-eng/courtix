@@ -5,7 +5,8 @@ import { SiteNav } from "@/components/SiteNav";
 export default function NotFound() {
   return (
     <>
-      <SiteNav />
+      {/* Global 404: no route group layout, so no session lookup here either. */}
+      <SiteNav account={null} />
       <main className="shell flex flex-col items-center py-28 text-center">
         <p className="eyebrow mb-6">Error 404</p>
         <h1 className="mb-4 text-[clamp(36px,6vw,64px)] leading-[0.98]">

@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { CourtCarousel } from "@/components/CourtCarousel";
 import { OpenPlayCard } from "@/components/OpenPlayCard";
 import { openSlotsToday, upcomingDates } from "@/lib/availability";
 import { COURTS, getCourt } from "@/lib/data/courts";
 import { allOpenPlays } from "@/lib/data/openplays";
-import { getCurrentPlayer } from "@/lib/data/player";
 import { sportName } from "@/lib/data/sports";
 import { dateLabel, peso, rangeLabel } from "@/lib/format";
 import { openPlayStatuses } from "@/lib/server/openplay-status";
+import { getCurrentPlayer } from "@/lib/server/player";
 import { getStorage } from "@/lib/server/storage";
 
 export const metadata: Metadata = {
@@ -27,7 +28,10 @@ function greeting(): string {
 }
 
 export default async function PlayerHomePage() {
-  const player = getCurrentPlayer();
+  const player = await getCurrentPlayer();
+  // Middleware already bounced signed-out visitors; this narrows the type and
+  // covers a cookie that named a dead session.
+  if (!player) redirect("/login?next=/player-home");
   const today = upcomingDates(1)[0];
 
   // Suggested = the player's saved courts first, then top-rated in their sports.

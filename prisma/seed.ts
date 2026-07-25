@@ -22,7 +22,6 @@ import { PrismaClient } from "@prisma/client";
 
 import { COURTS, unitLabelFor } from "@/lib/data/courts";
 import { allOpenPlays } from "@/lib/data/openplays";
-import { getCurrentPlayer } from "@/lib/data/player";
 import { SPORTS } from "@/lib/data/sports";
 import { hashPassword } from "@/lib/server/password";
 
@@ -273,7 +272,21 @@ async function main(): Promise<void> {
   // ------------------------------------------------------------- demo player
   // The profile behind /player-home. Its email matches bookings the demo
   // creates, so that page keeps working once it reads from the database.
-  const demo = getCurrentPlayer();
+  //
+  // Used to come from src/lib/data/player.ts; now that getCurrentPlayer()
+  // reads the session instead, this script is the fixture's one remaining
+  // home.
+  const demo = {
+    name: "Jomar Reyes",
+    email: "jomar.r@example.ph",
+    phone: "09171234567",
+    city: "Tagum City",
+    skill: "Intermediate",
+    rating: 3.5,
+    favouriteSports: ["pickleball", "badminton"],
+    savedCourtIds: [1, 7, 3],
+    memberSince: "Mar 2026",
+  } as const;
 
   // Read the existing hash first: the upsert must only fill a missing one, so
   // that a password changed since the last seed survives a re-seed.
