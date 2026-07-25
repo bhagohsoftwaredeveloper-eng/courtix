@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Courtix
 
 Book any court — pickleball, badminton, basketball and golf, by the hour, across
@@ -196,3 +197,6 @@ Frontend is complete and builds clean. What is **not** real yet:
 All of it is sequenced in
 [`BOOKING_INTEGRATION_PLAN.md`](BOOKING_INTEGRATION_PLAN.md) — roughly six weeks
 to a system that can take money safely.
+=======
+# courtix
+>>>>>>> f4820a70655a9f70b801018be0fa060383eef0f2
