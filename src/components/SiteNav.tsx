@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AccountMenu } from "@/components/AccountMenu";
 import { Logo } from "@/components/Logo";
 
 const LINKS = [
@@ -12,7 +13,11 @@ const LINKS = [
   { href: "/list-your-court", label: "List your court" },
 ];
 
-export function SiteNav({ account }: { account: { name: string; href: string } | null }) {
+export function SiteNav({
+  account,
+}: {
+  account: { name: string; email: string; href: string } | null;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -43,9 +48,7 @@ export function SiteNav({ account }: { account: { name: string; href: string } |
 
         <div className="flex items-center gap-3">
           {account ? (
-            <Link href={account.href} className="btn btn-ghost hidden sm:inline-flex">
-              {account.name.split(" ")[0]}
-            </Link>
+            <AccountMenu account={account} />
           ) : (
             <Link href="/login" className="btn btn-ghost hidden sm:inline-flex">
               Sign in

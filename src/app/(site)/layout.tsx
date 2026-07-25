@@ -11,7 +11,9 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   return (
     <>
       <SiteNav
-        account={user ? { name: user.name, href: homeFor(user.role) } : null}
+        account={
+          user ? { name: user.name, email: user.email, href: homeFor(user.role) } : null
+        }
       />
       <main>{children}</main>
       <SiteFooter />

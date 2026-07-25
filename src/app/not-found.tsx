@@ -10,7 +10,9 @@ export default async function NotFound() {
   return (
     <>
       <SiteNav
-        account={user ? { name: user.name, href: homeFor(user.role) } : null}
+        account={
+          user ? { name: user.name, email: user.email, href: homeFor(user.role) } : null
+        }
       />
       <main className="shell flex flex-col items-center py-28 text-center">
         <p className="eyebrow mb-6">Error 404</p>
