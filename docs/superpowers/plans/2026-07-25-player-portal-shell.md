@@ -18,7 +18,8 @@
 - Every surface showing a calorie figure must carry the exact text: **"Estimated from session length and sport."**
 - Calorie rates are exactly: `pickleball: 500`, `badminton: 450`, `basketball: 580`, `golf: 250` kcal/hour.
 - The sidebar and the avatar dropdown must only link to pages that exist in this chunk. Chunk A ships: Your account → Player Dashboard, Edit Profile; Quick actions → Book a Court (`/courts`), Join Open Play (`/open-plays`). The Support & Legal section is NOT rendered.
-- Owner and admin sidebars must look and behave exactly as they do now.
+- All three portals share one sidebar and one user card. Owner and admin gain the card too; their nav links, order and behaviour must not change.
+- `DashSidebar` takes a short `role` badge ("Player" | "Owner" | "Super Admin") and an optional `subtitle` line for the organization name. Never cram the org name into the badge.
 - Reuse existing Tailwind conventions — `panel`, `btn btn-solid`, `btn btn-ghost`, `field`, `field-label`, `text-muted`, `text-ball-yellow`, `border-line-white/8`, `status-chip`. Invent no new design language.
 - Never log a password, hash or session token.
 - Comments explain *why*, not *what*.
@@ -538,7 +539,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `initialsOf` from `@/lib/format`; `logoutAction` from `@/app/(site)/login/actions`
-- Produces: `interface NavSection { title?: string; items: NavItem[] }`, and `<DashSidebar role={string} sections={NavSection[]} user={{ name: string; email: string }} />`
+- Produces: `interface NavSection { title?: string; items: NavItem[] }`, and `<DashSidebar role={string} subtitle={string?} sections={NavSection[]} user={{ name: string; email: string }} />`
 
 - [ ] **Step 1: Rewrite the sidebar**
 
@@ -569,10 +570,14 @@ export interface NavSection {
 
 export function DashSidebar({
   role,
+  subtitle,
   sections,
   user,
 }: {
+  /** Short badge text: "Player", "Owner", "Super Admin". */
   role: string;
+  /** Secondary line under the badge — the owner's organization. */
+  subtitle?: string;
   sections: NavSection[];
   user: { name: string; email: string };
 }) {
@@ -633,6 +638,7 @@ export function DashSidebar({
         <span className="mt-1 inline-block rounded-full bg-court-green px-2 py-0.5 text-[10px] font-bold text-ball-yellow">
           {role}
         </span>
+        {subtitle && <p className="mt-1 truncate text-[11px] text-muted">{subtitle}</p>}
       </div>
     </div>
   );
@@ -697,7 +703,7 @@ export function DashSidebar({
 }
 ```
 
-Note what moved: the role string is now a badge inside the user card rather than a bare line above the nav, and the name/email that used to sit at the bottom moved up into that card.
+Note what moved: the role is now a short badge inside the user card rather than a bare line above the nav, the organization name became the `subtitle` line beneath it, and the name/email that used to sit at the bottom moved up into that card. All three portals get this card — that is intended, not a regression.
 
 - [ ] **Step 2: Update the owner layout**
 
@@ -741,7 +747,18 @@ const NAV: NavSection[] = [
 ];
 ```
 
-Change the import to `import { DashSidebar, type NavSection } from "@/components/dashboard/DashSidebar";` and the JSX prop from `items={NAV}` to `sections={NAV}`.
+Change the import to `import { DashSidebar, type NavSection } from "@/components/dashboard/DashSidebar";`, then replace the `DashSidebar` element with:
+
+```tsx
+      <DashSidebar
+        role="Owner"
+        subtitle={membership?.org.name ?? "No facility yet"}
+        sections={NAV}
+        user={{ name: user.name, email: user.email }}
+      />
+```
+
+The organization name moves out of the badge and onto the subtitle line — "Owner · Kitchen Line Club" was never going to fit in a pill.
 
 - [ ] **Step 3: Update the admin layout**
 
@@ -764,7 +781,16 @@ const NAV: NavSection[] = [
 ];
 ```
 
-Change the import to `import { DashSidebar, type NavSection } from "@/components/dashboard/DashSidebar";` and `items={NAV}` to `sections={NAV}`.
+Change the import to `import { DashSidebar, type NavSection } from "@/components/dashboard/DashSidebar";`, then replace the `DashSidebar` element with:
+
+```tsx
+      <DashSidebar
+        role="Super Admin"
+        subtitle="Platform"
+        sections={NAV}
+        user={{ name: user.name, email: user.email }}
+      />
+```
 
 - [ ] **Step 4: Verify**
 
@@ -1716,7 +1742,7 @@ On any public page while signed in, the nav shows the `JR` avatar. Clicking open
 
 - [ ] **Step 9: Check owner and admin are unchanged**
 
-Sign in as `owner@kitchenline.ph` and `admin@courtix.ph`. Both sidebars show their original seven and eight links, now with the user card above them, and sign-out still works.
+Sign in as `owner@kitchenline.ph` and `admin@courtix.ph`. Both sidebars show their original seven and eight links in the original order, now with the user card above them: owner reads badge "Owner" with "Kitchen Line Club" beneath, admin reads "Super Admin" with "Platform". Sign-out still works from both.
 
 - [ ] **Step 10: Full check**
 
