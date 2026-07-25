@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" role="img">
+
+  <defs>
+    <linearGradient id="sky-a" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#180d07"/>
+      <stop offset="100%" stop-color="#2a1a12"/>
+    </linearGradient>
+    <linearGradient id="floor-a" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a4622c"/>
+      <stop offset="100%" stop-color="#5d3316"/>
+    </linearGradient>
+    <radialGradient id="bloom-a" cx="0.5" cy="0.28" r="0.55">
+      <stop offset="0%" stop-color="#E4FF5C" stop-opacity="0.20"/>
+      <stop offset="100%" stop-color="#E4FF5C" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vig-a" cx="0.5" cy="0.5" r="0.78">
+      <stop offset="55%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.55"/>
+    </radialGradient>
+    <filter id="grain-a" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed="7"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.055"/></feComponentTransfer>
+    </filter>
+    <filter id="soft-a" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+  </defs>
+  <rect width="800" height="600" fill="url(#sky-a)"/>
+  <rect width="800" height="600" fill="url(#bloom-a)"/>
+
+  <rect x="0" y="0" width="800" height="246" fill="#1a0f09"/>
+  
+    <ellipse cx="121" cy="50" rx="46" ry="12" fill="#ffb27a" opacity="0.14" filter="url(#soft-a)"/>
+    <rect x="91" y="45" width="60" height="9" rx="4" fill="#F4F1E8" opacity="0.5"/>
+    <ellipse cx="307" cy="50" rx="46" ry="12" fill="#ffb27a" opacity="0.14" filter="url(#soft-a)"/>
+    <rect x="277" y="45" width="60" height="9" rx="4" fill="#F4F1E8" opacity="0.5"/>
+    <ellipse cx="493" cy="50" rx="46" ry="12" fill="#ffb27a" opacity="0.14" filter="url(#soft-a)"/>
+    <rect x="463" y="45" width="60" height="9" rx="4" fill="#F4F1E8" opacity="0.5"/>
+    <ellipse cx="679" cy="50" rx="46" ry="12" fill="#ffb27a" opacity="0.14" filter="url(#soft-a)"/>
+    <rect x="649" y="45" width="60" height="9" rx="4" fill="#F4F1E8" opacity="0.5"/>
+  <!-- bleachers -->
+  <rect x="0" y="152" width="800" height="12" fill="#F4F1E8" opacity="0.04"/><rect x="0" y="168" width="800" height="12" fill="#F4F1E8" opacity="0.052000000000000005"/><rect x="0" y="184" width="800" height="12" fill="#F4F1E8" opacity="0.064"/><rect x="0" y="200" width="800" height="12" fill="#F4F1E8" opacity="0.07600000000000001"/><rect x="0" y="216" width="800" height="12" fill="#F4F1E8" opacity="0.088"/><rect x="0" y="232" width="800" height="12" fill="#F4F1E8" opacity="0.1"/>
+  <!-- hardwood -->
+  <polygon points="175.6,244.0 624.4,244.0 1250.0,594.0 -450.0,594.0" fill="url(#floor-a)" />
+  <line x1="175.6" y1="244.0" x2="-450.0" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="200.5" y1="244.0" x2="-355.6" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="225.5" y1="244.0" x2="-261.1" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="250.4" y1="244.0" x2="-166.7" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="275.3" y1="244.0" x2="-72.2" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="300.3" y1="244.0" x2="22.2" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="325.2" y1="244.0" x2="116.7" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="350.1" y1="244.0" x2="211.1" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="375.1" y1="244.0" x2="305.6" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="400.0" y1="244.0" x2="400.0" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="424.9" y1="244.0" x2="494.4" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="449.9" y1="244.0" x2="588.9" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="474.8" y1="244.0" x2="683.3" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="499.7" y1="244.0" x2="777.8" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="524.7" y1="244.0" x2="872.2" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="549.6" y1="244.0" x2="966.7" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="574.5" y1="244.0" x2="1061.1" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="599.5" y1="244.0" x2="1155.6" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/><line x1="624.4" y1="244.0" x2="1250.0" y2="594.0" stroke="#5d3316" stroke-width="1.5" opacity="0.28" stroke-linecap="round"/>
+  <!-- key + arcs -->
+  <polygon points="341.5,251.0 458.5,251.0 523.4,398.0 276.6,398.0" fill="#E4572E" opacity="0.3"/>
+  <line x1="260.6" y1="251.0" x2="539.4" y2="251.0" stroke="#F4F1E8" stroke-width="3" opacity="0.85" stroke-linecap="round"/>
+  <line x1="260.6" y1="251.0" x2="-100.0" y2="594.0" stroke="#F4F1E8" stroke-width="3" opacity="0.8" stroke-linecap="round"/>
+  <line x1="539.4" y1="251.0" x2="900.0" y2="594.0" stroke="#F4F1E8" stroke-width="3" opacity="0.8" stroke-linecap="round"/>
+  <line x1="341.5" y1="251.0" x2="276.6" y2="398.0" stroke="#F4F1E8" stroke-width="2.5" opacity="0.85" stroke-linecap="round"/>
+  <line x1="458.5" y1="251.0" x2="523.4" y2="398.0" stroke="#F4F1E8" stroke-width="2.5" opacity="0.85" stroke-linecap="round"/>
+  <line x1="276.6" y1="398.0" x2="523.4" y2="398.0" stroke="#F4F1E8" stroke-width="2.5" opacity="0.85" stroke-linecap="round"/>
+  <path d="M276.6,398.0 A 62 30 0 0 0 523.4,398.0" fill="none" stroke="#F4F1E8" stroke-width="2.5" opacity="0.8"/>
+  <path d="M165.0,342.0 A 250 118 0 0 0 635.0,342.0" fill="none" stroke="#F4F1E8" stroke-width="2.5" opacity="0.7"/>
+  <line x1="-100.0" y1="594.0" x2="900.0" y2="594.0" stroke="#F4F1E8" stroke-width="4" opacity="0.9" stroke-linecap="round"/>
+  <!-- hoop -->
+  <g>
+    <rect x="392" y="118" width="16" height="106" fill="#F4F1E8" opacity="0.34"/>
+    <rect x="330" y="88" width="140" height="86" rx="5" fill="#0d2924" opacity="0.9" stroke="#F4F1E8" stroke-width="3"/>
+    <rect x="368" y="126" width="64" height="40" rx="2" fill="none" stroke="#F4F1E8" stroke-width="3"/>
+    <ellipse cx="400" cy="184" rx="34" ry="9" fill="none" stroke="#E4FF5C" stroke-width="5"/>
+    <line x1="434.0" y1="184.0" x2="417.0" y2="230" stroke="#F4F1E8" stroke-width="1.6" opacity="0.62"/><line x1="428.6" y1="188.9" x2="414.3" y2="230" stroke="#F4F1E8" stroke-width="1.6" opacity="0.62"/><line x1="414.1" y1="192.2" x2="407.1" y2="230" stroke="#F4F1E8" stroke-width="1.6" opacity="0.62"/><line x1="395.2" y1="192.9" x2="397.6" y2="230" stroke="#F4F1E8" stroke-width="1.6" opacity="0.62"/><line x1="377.7" y1="190.8" x2="388.9" y2="230" stroke="#F4F1E8" stroke-width="1.6" opacity="0.62"/><line x1="367.4" y1="186.5" x2="383.7" y2="230" stroke="#F4F1E8" stroke-width="1.6" opacity="0.62"/><line x1="367.4" y1="181.5" x2="383.7" y2="230" stroke="#F4F1E8" stroke-width="1.6" opacity="0.62"/><line x1="377.7" y1="177.2" x2="388.9" y2="230" stroke="#F4F1E8" stroke-width="1.6" opacity="0.62"/><line x1="395.2" y1="175.1" x2="397.6" y2="230" stroke="#F4F1E8" stroke-width="1.6" opacity="0.62"/><line x1="414.1" y1="175.8" x2="407.1" y2="230" stroke="#F4F1E8" stroke-width="1.6" opacity="0.62"/><line x1="428.6" y1="179.1" x2="414.3" y2="230" stroke="#F4F1E8" stroke-width="1.6" opacity="0.62"/>
+    <path d="M366,214 Q400,238 434,214" fill="none" stroke="#F4F1E8" stroke-width="1.6" opacity="0.5"/>
+  </g>
+  <!-- ball -->
+  <g transform="translate(556 372)">
+    <ellipse cx="0" cy="54" rx="42" ry="10" fill="#000" opacity="0.4"/>
+    <circle r="44" fill="#E4572E"/>
+    <circle r="44" fill="none" stroke="#0E1512" stroke-width="2.5" opacity="0.5"/>
+    <path d="M-44,0 A44,44 0 0 0 44,0" fill="none" stroke="#0E1512" stroke-width="2.5" opacity="0.5"/>
+    <path d="M0,-44 A44,44 0 0 0 0,44" fill="none" stroke="#0E1512" stroke-width="2.5" opacity="0.5"/>
+    <path d="M-38,-22 Q0,0 38,-22" fill="none" stroke="#0E1512" stroke-width="2.5" opacity="0.5"/>
+    <path d="M-38,22 Q0,0 38,22" fill="none" stroke="#0E1512" stroke-width="2.5" opacity="0.5"/>
+    <circle cx="-15" cy="-16" r="15" fill="#F4F1E8" opacity="0.12"/>
+  </g>
+  <rect width="800" height="600" fill="url(#vig-a)"/>
+  <rect width="800" height="600" filter="url(#grain-a)" opacity="0.5"/>
+</svg>

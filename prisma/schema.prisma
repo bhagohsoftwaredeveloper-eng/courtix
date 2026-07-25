@@ -1,0 +1,886 @@
+// ============================================================================
+// Courtix — database schema
+// ----------------------------------------------------------------------------
+// MySQL + Prisma. Covers every function currently built in the app across
+// the three roles: player, owner, and platform admin.
+//
+// Conventions
+//   • Money is always integer centavos (`...Cents`). Never a float — see
+//     BOOKING_INTEGRATION_PLAN.md § Payment.
+//   • Rates are basis points (`...Bps`): 600 = 6.00%.
+//   • Times of day are integer 24h hours (0–24). Dates are @db.Date (no TZ).
+//   • Every table this app writes to has createdAt; mutable ones have updatedAt.
+//
+// Double-booking is prevented at the DB level by BookingSlot (one row per
+// court-hour with a unique constraint). See that model, and DATABASE_SCHEMA.md.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum UserRole {
+  PLAYER
+  OWNER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum OpenPlaySkill {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ALL_LEVELS
+}
+
+enum WaitlistRole {
+  PLAYER
+  OWNER
+  BOTH
+}
+
+enum CityStatus {
+  LIVE
+  WAITLIST
+}
+
+enum FacilityStatus {
+  DRAFT // owner is still setting it up
+  PENDING_REVIEW // submitted, waiting on admin approval
+  APPROVED // live and searchable
+  DECLINED
+  SUSPENDED // taken down (owner paused, or admin action)
+}
+
+enum BlockReason {
+  MAINTENANCE
+  LEAGUE
+  PRIVATE_HIRE
+  HOLIDAY
+  OTHER
+}
+
+enum BookingStatus {
+  HELD // slot reserved during checkout, expires if unpaid
+  CONFIRMED
+  COMPLETED // session happened
+  CANCELLED
+  NO_SHOW
+}
+
+enum OpenPlayStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+}
+
+enum OpenPlayJoinStatus {
+  CONFIRMED
+  WAITLISTED
+  CANCELLED
+}
+
+enum PaymentProvider {
+  PAYMONGO
+  MANUAL // pay-at-venue / cash reconciled by the host
+}
+
+enum PaymentMethod {
+  CARD
+  GCASH
+  GRABPAY
+  MAYA
+  PAY_AT_VENUE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+enum PayoutStatus {
+  SCHEDULED
+  PROCESSING
+  PAID
+  FAILED
+}
+
+enum FacilityTxnType {
+  BOOKING_PAYMENT
+  MEMBERSHIP
+  RENTAL
+  OTHER
+}
+
+enum DisputeType {
+  REFUND_REQUEST
+  NO_SHOW
+  DAMAGE
+  DOUBLE_BOOKING
+  OTHER
+}
+
+enum DisputeStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  ESCALATED
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  IN_APP
+}
+
+enum NotificationEvent {
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  BOOKING_REMINDER
+  OPEN_PLAY_JOINED
+  OPEN_PLAY_SEAT_OPENED
+  PAYOUT_SENT
+  PLAYER_MESSAGE
+  CITY_LAUNCHED
+  PRODUCT_UPDATE
+}
+
+// ============================================================================
+// IDENTITY & AUTH  (NextAuth-compatible; integration plan Phase 5)
+// ============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String
+  phone         String?
+  image         String?
+  role          UserRole  @default(PLAYER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // NextAuth
+  accounts Account[]
+  sessions Session[]
+
+  // Profiles
+  playerProfile PlayerProfile?
+  memberships   OrganizationMember[]
+
+  // Activity
+  bookings          Booking[]
+  openPlayJoins     OpenPlayJoin[]
+  reviews           Review[]
+  savedCourts       SavedCourt[]
+  waitlistEntry     WaitlistEntry?
+  facilityMemberships Membership[]
+  sentMessages      Message[]            @relation("MessageSender")
+  conversations     Conversation[]       @relation("ConversationPlayer")
+  disputesRaised    Dispute[]            @relation("DisputeRaisedBy")
+  disputeMessages   DisputeMessage[]
+  notifications     Notification[]
+  notificationPrefs NotificationPreference[]
+  auditLogs         AuditLog[]
+  blocksCreated     Block[]
+
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PlayerProfile {
+  id          String      @id @default(cuid())
+  userId      String      @unique
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill       SkillLevel  @default(BEGINNER)
+  rating      Decimal?    @db.Decimal(3, 2) // DUPR-style, e.g. 3.50
+  homeCityId  String?
+  homeCity    City?       @relation(fields: [homeCityId], references: [id])
+  memberSince DateTime    @default(now())
+  favourites  PlayerSport[]
+
+  @@index([homeCityId])
+}
+
+// A host business. One org can own many facilities and have several members.
+model Organization {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  contactEmail   String
+  contactPhone   String?
+  // Payout account (tokenised — never store raw bank numbers in prod).
+  payoutBankName String?
+  payoutRef      String? // last-4 / provider token
+  // Commission: null falls back to the platform default. Founding hosts get a
+  // lower rate until foundingRateUntil.
+  commissionBps     Int?
+  foundingRateUntil DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  members    OrganizationMember[]
+  facilities Facility[]
+  payouts    Payout[]
+}
+
+model OrganizationMember {
+  id     String   @id @default(cuid())
+  orgId  String
+  userId String
+  role   UserRole @default(OWNER) // OWNER or staff (ADMIN within the org)
+  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, userId])
+  @@index([userId])
+}
+
+// ============================================================================
+// CATALOG
+// ============================================================================
+
+model Sport {
+  id              String  @id // slug: "pickleball", "badminton", ...
+  name            String
+  unitLabel       String // "court" | "bay"
+  unitLabelPlural String
+  fromPriceCents  Int? // marketing "from ₱x/hr"
+  enabled         Boolean @default(true)
+
+  primaryFacilities Facility[] // facilities whose primary sport is this
+  facilities        FacilitySport[]
+  courtUnits        CourtUnit[]
+  openPlays         OpenPlay[]
+  bookings          Booking[]
+  playerFavs        PlayerSport[]
+  waitlistWants     WaitlistSport[]
+}
+
+model City {
+  id           String     @id @default(cuid())
+  name         String
+  province     String
+  status       CityStatus @default(WAITLIST)
+  // Cities open in waitlist order — lower rank launches first.
+  waitlistRank Int?
+  launchedAt   DateTime?
+
+  facilities     Facility[]
+  players        PlayerProfile[]
+  waitlistEntries WaitlistEntry[]
+
+  @@unique([name, province])
+}
+
+model Amenity {
+  id         String            @id // slug: "lighting", "aircon", ...
+  label      String
+  facilities FacilityAmenity[]
+}
+
+// ============================================================================
+// FACILITIES & COURTS
+// ============================================================================
+
+model Facility {
+  id             String         @id @default(cuid())
+  orgId          String
+  org            Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  slug           String         @unique
+  name           String
+  description    String @db.Text
+  cityId         String
+  city           City           @relation(fields: [cityId], references: [id])
+  addressText    String
+  lat            Float?
+  lng            Float?
+  primarySportId String
+  primarySport   Sport          @relation(fields: [primarySportId], references: [id])
+  basePriceCents Int // default hourly rate; a unit may override
+  // Default opening window; per-weekday overrides live in OpeningHour.
+  opens          Int            @default(6)
+  closes         Int            @default(22)
+  indoor         Boolean        @default(false)
+  status         FacilityStatus @default(DRAFT)
+  fastPay        Boolean        @default(true)
+  // Denormalised rollups, refreshed from reviews/bookings.
+  ratingAvg      Decimal?       @db.Decimal(2, 1)
+  reviewCount    Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  courtUnits   CourtUnit[]
+  images       FacilityImage[]
+  amenities    FacilityAmenity[]
+  sports       FacilitySport[]
+  openingHours OpeningHour[]
+  openPlays    OpenPlay[]
+  bookings     Booking[]
+  reviews      Review[]
+  savedBy      SavedCourt[]
+  memberships  Membership[]
+  transactions FacilityTransaction[]
+  conversations Conversation[]
+  disputes     Dispute[]
+
+  @@index([cityId, status])
+  @@index([primarySportId])
+  @@index([orgId])
+}
+
+// A single bookable court/bay inside a facility — "Court 1", "Bay 3".
+model CourtUnit {
+  id                String   @id @default(cuid())
+  facilityId        String
+  facility          Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  index             Int // 0-based position within the facility
+  label             String // "Court 1" — denormalised for display
+  sportId           String
+  sport             Sport    @relation(fields: [sportId], references: [id])
+  priceCentsOverride Int? // null → facility.basePriceCents
+  active            Boolean  @default(true)
+
+  bookings    Booking[]
+  bookingSlots BookingSlot[]
+  blocks      Block[]
+  openPlays   OpenPlay[]
+
+  @@unique([facilityId, index])
+  @@index([facilityId])
+}
+
+model FacilityImage {
+  id         String   @id @default(cuid())
+  facilityId String
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  url        String @db.Text
+  alt        String
+  position   Int      @default(0)
+
+  @@index([facilityId])
+}
+
+model FacilitySport {
+  facilityId String
+  sportId    String
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  sport      Sport    @relation(fields: [sportId], references: [id], onDelete: Cascade)
+
+  @@id([facilityId, sportId])
+}
+
+model FacilityAmenity {
+  facilityId String
+  amenityId  String
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  amenity    Amenity  @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([facilityId, amenityId])
+}
+
+// Per-weekday opening window; overrides Facility.opens/closes when present.
+model OpeningHour {
+  id         String   @id @default(cuid())
+  facilityId String
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int // 0 = Sunday … 6 = Saturday
+  openHour   Int
+  closeHour  Int
+  closed     Boolean  @default(false)
+
+  @@unique([facilityId, dayOfWeek])
+}
+
+// Owner takes a court off the market: maintenance, league night, private hire.
+model Block {
+  id          String      @id @default(cuid())
+  courtUnitId String
+  courtUnit   CourtUnit   @relation(fields: [courtUnitId], references: [id], onDelete: Cascade)
+  date        DateTime    @db.Date
+  startHour   Int
+  hours       Int
+  reason      BlockReason @default(MAINTENANCE)
+  note        String? @db.Text
+  createdById String?
+  createdBy   User?       @relation(fields: [createdById], references: [id])
+  createdAt   DateTime    @default(now())
+
+  @@index([courtUnitId, date])
+}
+
+// ============================================================================
+// BOOKINGS
+// ============================================================================
+
+model Booking {
+  id          String        @id @default(cuid())
+  ref         String        @unique // "CTX-8F31A2"
+  facilityId  String
+  facility    Facility      @relation(fields: [facilityId], references: [id])
+  courtUnitId String
+  courtUnit   CourtUnit     @relation(fields: [courtUnitId], references: [id])
+  sportId     String
+  sport       Sport         @relation(fields: [sportId], references: [id])
+
+  // Player may be a logged-in user or a guest; contact fields are snapshotted.
+  playerId     String?
+  player       User?    @relation(fields: [playerId], references: [id])
+  contactName  String
+  contactEmail String
+  contactPhone String
+
+  date      DateTime      @db.Date
+  startHour Int
+  hours     Int
+  status    BookingStatus @default(HELD)
+
+  // Price snapshot — the rate at time of booking, never re-derived.
+  unitPriceCents  Int
+  subtotalCents   Int
+  serviceFeeCents Int
+  commissionBps   Int
+  commissionCents Int
+  totalCents      Int
+
+  notes       String? @db.Text
+  heldUntil   DateTime? // for HELD rows; swept when expired
+  cancelledAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  slots      BookingSlot[]
+  payment    Payment?
+  review     Review?
+  payoutItem PayoutItem?
+  disputes   Dispute[]
+
+  @@index([facilityId, date])
+  @@index([courtUnitId, date])
+  @@index([playerId])
+  @@index([contactEmail])
+  @@index([status])
+}
+
+// One row per occupied court-hour. The unique constraint is what makes
+// double-booking impossible: two bookings can't insert the same (court, date,
+// hour). Rows are DELETED when a booking is cancelled, so the constraint always
+// reflects live occupancy without needing a partial index.
+model BookingSlot {
+  id          String    @id @default(cuid())
+  bookingId   String
+  booking     Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  courtUnitId String
+  courtUnit   CourtUnit @relation(fields: [courtUnitId], references: [id], onDelete: Cascade)
+  date        DateTime  @db.Date
+  hour        Int
+
+  @@unique([courtUnitId, date, hour])
+  @@index([bookingId])
+}
+
+// ============================================================================
+// OPEN PLAYS
+// ============================================================================
+
+model OpenPlay {
+  id             String         @id @default(cuid())
+  facilityId     String
+  facility       Facility       @relation(fields: [facilityId], references: [id])
+  courtUnitId    String?
+  courtUnit      CourtUnit?     @relation(fields: [courtUnitId], references: [id])
+  sportId        String
+  sport          Sport          @relation(fields: [sportId], references: [id])
+  title          String
+  organizer      String
+  date           DateTime       @db.Date
+  startHour      Int
+  hours          Int
+  pricePerPlayerCents Int
+  capacity       Int
+  skill          OpenPlaySkill  @default(ALL_LEVELS)
+  fastPay        Boolean        @default(true)
+  status         OpenPlayStatus @default(SCHEDULED)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  joins OpenPlayJoin[]
+
+  @@index([facilityId, date])
+  @@index([sportId, date])
+  @@index([status, date])
+}
+
+model OpenPlayJoin {
+  id           String             @id @default(cuid())
+  openPlayId   String
+  openPlay     OpenPlay           @relation(fields: [openPlayId], references: [id], onDelete: Cascade)
+  playerId     String?
+  player       User?              @relation(fields: [playerId], references: [id])
+  playerName   String
+  playerEmail  String
+  playerPhone  String
+  status       OpenPlayJoinStatus @default(CONFIRMED)
+  createdAt    DateTime           @default(now())
+
+  payment Payment?
+
+  // A player joins a given session at most once.
+  @@unique([openPlayId, playerEmail])
+  @@index([openPlayId, status])
+  @@index([playerId])
+}
+
+// ============================================================================
+// PAYMENTS, REFUNDS, PAYOUTS
+// ============================================================================
+
+model Payment {
+  id               String          @id @default(cuid())
+  // Exactly one of these is set.
+  bookingId        String?         @unique
+  booking          Booking?        @relation(fields: [bookingId], references: [id])
+  openPlayJoinId   String?         @unique
+  openPlayJoin     OpenPlayJoin?   @relation(fields: [openPlayJoinId], references: [id])
+
+  provider         PaymentProvider @default(PAYMONGO)
+  providerIntentId String?         @unique // idempotency key for webhooks
+  method           PaymentMethod?
+  amountCents      Int
+  status           PaymentStatus   @default(PENDING)
+  paidAt           DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  refunds Refund[]
+
+  @@index([status])
+}
+
+model Refund {
+  id          String       @id @default(cuid())
+  paymentId   String
+  payment     Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  amountCents Int
+  reason      String
+  status      RefundStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+
+  @@index([paymentId])
+}
+
+// A twice-monthly remittance to an owner org.
+model Payout {
+  id              String       @id @default(cuid())
+  orgId           String
+  org             Organization @relation(fields: [orgId], references: [id])
+  periodStart     DateTime     @db.Date
+  periodEnd       DateTime     @db.Date
+  grossCents      Int
+  commissionCents Int
+  netCents        Int
+  status          PayoutStatus @default(SCHEDULED)
+  paidAt          DateTime?
+  createdAt       DateTime     @default(now())
+
+  items PayoutItem[]
+
+  @@index([orgId, periodEnd])
+}
+
+model PayoutItem {
+  id        String  @id @default(cuid())
+  payoutId  String
+  payout    Payout  @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+  bookingId String  @unique // each booking is remitted once
+  booking   Booking @relation(fields: [bookingId], references: [id])
+
+  @@index([payoutId])
+}
+
+// Non-booking facility revenue shown in the owner's "recent transactions".
+model FacilityTransaction {
+  id          String          @id @default(cuid())
+  facilityId  String
+  facility    Facility        @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  type        FacilityTxnType
+  label       String
+  amountCents Int
+  playerId    String?
+  createdAt   DateTime        @default(now())
+
+  @@index([facilityId, createdAt])
+}
+
+model Membership {
+  id          String   @id @default(cuid())
+  facilityId  String
+  facility    Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  playerId    String
+  player      User     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  plan        String
+  priceCents  Int
+  validUntil  DateTime @db.Date
+  createdAt   DateTime @default(now())
+
+  @@unique([facilityId, playerId, plan])
+  @@index([playerId])
+}
+
+// ============================================================================
+// REVIEWS, SAVED COURTS, MESSAGING  (community)
+// ============================================================================
+
+model Review {
+  id         String   @id @default(cuid())
+  bookingId  String   @unique // one review per completed booking
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  facilityId String
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  playerId   String
+  player     User     @relation(fields: [playerId], references: [id])
+  rating     Int // 1–5
+  comment    String? @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([facilityId])
+}
+
+model SavedCourt {
+  playerId   String
+  facilityId String
+  player     User     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@id([playerId, facilityId])
+}
+
+model Conversation {
+  id            String    @id @default(cuid())
+  facilityId    String
+  facility      Facility  @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  playerId      String
+  player        User      @relation("ConversationPlayer", fields: [playerId], references: [id])
+  lastMessageAt DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+
+  messages Message[]
+
+  @@unique([facilityId, playerId])
+  @@index([facilityId, lastMessageAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id])
+  body           String @db.Text
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// ============================================================================
+// DISPUTES & SUPPORT
+// ============================================================================
+
+model Dispute {
+  id             String        @id @default(cuid())
+  bookingId      String?
+  booking        Booking?      @relation(fields: [bookingId], references: [id])
+  facilityId     String
+  facility       Facility      @relation(fields: [facilityId], references: [id])
+  raisedById     String
+  raisedBy       User          @relation("DisputeRaisedBy", fields: [raisedById], references: [id])
+  type           DisputeType
+  status         DisputeStatus @default(OPEN)
+  slaDueAt       DateTime?
+  resolvedAt     DateTime?
+  resolutionNote String? @db.Text
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  messages DisputeMessage[]
+
+  @@index([status])
+  @@index([facilityId])
+}
+
+model DisputeMessage {
+  id        String   @id @default(cuid())
+  disputeId String
+  dispute   Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
+  body      String @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([disputeId, createdAt])
+}
+
+// ============================================================================
+// LAUNCH WAITLIST  (CTA form)
+// ============================================================================
+
+model WaitlistEntry {
+  id        String       @id @default(cuid())
+  name      String
+  email     String       @unique
+  phone     String?
+  cityText  String // free text as typed on the form
+  cityId    String?
+  city      City?        @relation(fields: [cityId], references: [id])
+  role      WaitlistRole @default(PLAYER)
+  notes     String? @db.Text
+  position  Int // queue position handed back to the visitor
+  // Optional link once the visitor becomes a real user.
+  userId    String?      @unique
+  user      User?        @relation(fields: [userId], references: [id])
+  createdAt DateTime     @default(now())
+
+  sports WaitlistSport[]
+
+  @@index([cityId])
+}
+
+// ============================================================================
+// JOIN TABLES for m:n sport interest
+// ============================================================================
+
+model PlayerSport {
+  playerProfileId String
+  sportId         String
+  playerProfile   PlayerProfile @relation(fields: [playerProfileId], references: [id], onDelete: Cascade)
+  sport           Sport         @relation(fields: [sportId], references: [id], onDelete: Cascade)
+
+  @@id([playerProfileId, sportId])
+}
+
+model WaitlistSport {
+  waitlistEntryId String
+  sportId         String
+  waitlistEntry   WaitlistEntry @relation(fields: [waitlistEntryId], references: [id], onDelete: Cascade)
+  sport           Sport         @relation(fields: [sportId], references: [id], onDelete: Cascade)
+
+  @@id([waitlistEntryId, sportId])
+}
+
+// ============================================================================
+// PLATFORM: settings, notifications, audit
+// ============================================================================
+
+// Single-row table (id = "singleton") holding platform-wide policy the admin
+// settings page edits.
+model PlatformSetting {
+  id                      String @id @default("singleton")
+  standardCommissionBps   Int    @default(600) // 6%
+  foundingCommissionBps   Int    @default(300) // 3%
+  serviceFeeBps           Int    @default(600) // 6% player-side fee
+  defaultCancellationHours Int   @default(12)
+  noShowSuspendThreshold  Int    @default(3)
+  maxBookingHorizonDays   Int    @default(30)
+  updatedAt               DateTime @updatedAt
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     NotificationEvent
+  channel   NotificationChannel
+  title     String
+  body      String @db.Text
+  readAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  @@index([userId, readAt])
+}
+
+model NotificationPreference {
+  id     String            @id @default(cuid())
+  userId String
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event  NotificationEvent
+  email  Boolean           @default(true)
+  sms    Boolean           @default(false)
+  push   Boolean           @default(false)
+
+  @@unique([userId, event])
+}
+
+// Trail of privileged actions (approvals, refunds, suspensions, rate changes).
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String
+  actor     User     @relation(fields: [actorId], references: [id])
+  action    String // "facility.approve", "dispute.resolve", ...
+  entity    String // "Facility", "Dispute", ...
+  entityId  String
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([actorId, createdAt])
+}

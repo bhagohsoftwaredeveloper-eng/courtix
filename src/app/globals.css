@@ -1,0 +1,270 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Courtix design tokens
+   Ported 1:1 from the pitch prototype so the production build
+   is visually identical to what was approved.
+   ============================================================ */
+@theme {
+  --color-court-green: #163832;
+  --color-court-deep: #0e2621;
+  --color-kitchen-blue: #2f5185;
+  --color-line-white: #f4f1e8;
+  --color-ball-yellow: #e4ff5c;
+  --color-ink: #0e1512;
+  --color-fair-green: #4c7a3f;
+  --color-board-red: #e4572e;
+  --color-muted: #9fb3ad;
+  --color-card: #122e29;
+
+  --font-display: var(--font-archivo-black), sans-serif;
+  --font-sans: var(--font-manrope), sans-serif;
+  --font-mono: var(--font-plex-mono), monospace;
+
+  --radius-card: 14px;
+
+  --animate-draw: draw 1.6s ease forwards;
+  --animate-pop: pop 0.22s ease;
+  --animate-rise: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-court-deep);
+    color: var(--color-line-white);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background: var(--color-ball-yellow);
+    color: var(--color-ink);
+  }
+
+  /* Keyboard focus is always visible — the dark palette hides the
+     browser default almost completely. */
+  :focus-visible {
+    outline: 2px solid var(--color-ball-yellow);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-court-deep);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1d413a;
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #2a5a50;
+  }
+}
+
+/* ============================================================
+   Component primitives
+   These mirror the prototype's hand-written classes so markup
+   stays readable instead of drowning in utility strings.
+   ============================================================ */
+@layer components {
+  .shell {
+    max-width: 1280px;
+    margin-inline: auto;
+    padding-inline: 32px;
+  }
+  @media (max-width: 720px) {
+    .shell {
+      padding-inline: 18px;
+    }
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 22px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 13.5px;
+    letter-spacing: 0.01em;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    transition: filter 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    cursor: pointer;
+  }
+  .btn-solid {
+    background: var(--color-ball-yellow);
+    color: var(--color-ink);
+  }
+  .btn-solid:hover {
+    filter: brightness(1.06);
+  }
+  .btn-ghost {
+    border-color: rgba(244, 241, 232, 0.28);
+    color: var(--color-line-white);
+    background: transparent;
+  }
+  .btn-ghost:hover {
+    border-color: var(--color-ball-yellow);
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: none;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--color-ball-yellow);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 26px;
+    height: 2px;
+    background: var(--color-ball-yellow);
+    display: inline-block;
+    flex: 0 0 auto;
+  }
+
+  .panel {
+    background: var(--color-card);
+    border-radius: var(--radius-card);
+    border: 1px solid rgba(244, 241, 232, 0.06);
+    padding: 20px 22px;
+  }
+
+  .field {
+    width: 100%;
+    background: rgba(244, 241, 232, 0.05);
+    border: 1px solid rgba(244, 241, 232, 0.16);
+    border-radius: 11px;
+    padding: 12px 14px;
+    font-size: 14px;
+    color: var(--color-line-white);
+    transition: border-color 0.16s ease, background 0.16s ease;
+  }
+  .field::placeholder {
+    color: rgba(159, 179, 173, 0.7);
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-ball-yellow);
+    background: rgba(244, 241, 232, 0.08);
+  }
+  .field[aria-invalid="true"] {
+    border-color: var(--color-board-red);
+  }
+
+  .field-label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-muted);
+    margin-bottom: 7px;
+    font-weight: 600;
+  }
+
+  .status-chip {
+    font-size: 10.5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .status-open {
+    background: rgba(228, 255, 92, 0.15);
+    color: var(--color-ball-yellow);
+  }
+  .status-booked {
+    background: rgba(228, 87, 46, 0.18);
+    color: #ff9370;
+  }
+  .status-pending {
+    background: rgba(47, 81, 133, 0.35);
+    color: #9db8e6;
+  }
+}
+
+@layer utilities {
+  .draw {
+    stroke-dasharray: 1400;
+    stroke-dashoffset: 1400;
+    animation: var(--animate-draw);
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .draw {
+    stroke-dashoffset: 0;
+  }
+}

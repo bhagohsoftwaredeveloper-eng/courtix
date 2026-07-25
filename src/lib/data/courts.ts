@@ -1,0 +1,316 @@
+import type { Court, CourtImage, SportSlug } from "@/lib/types";
+import { getSport } from "@/lib/data/sports";
+
+/**
+ * Builds the three-image gallery each facility shows. Images are the
+ * generated sample scenes in /public/images/sports — swap these for real
+ * host uploads once the media pipeline lands (see BOOKING_INTEGRATION_PLAN.md).
+ */
+function gallery(sport: SportSlug, name: string): CourtImage[] {
+  return [1, 2, 3].map((n) => ({
+    src: `/images/sports/${sport}-${n}.svg`,
+    alt: `${name} — ${sport} court, view ${n}`,
+  }));
+}
+
+export const COURTS: Court[] = [
+  // ---------------------------------------------------------------- pickleball
+  {
+    id: 1,
+    slug: "kitchen-line-club",
+    sport: "pickleball",
+    name: "Kitchen Line Club",
+    loc: "Tagum City, Davao del Norte",
+    city: "Tagum City",
+    price: 350,
+    rating: 4.9,
+    reviewCount: 214,
+    images: gallery("pickleball", "Kitchen Line Club"),
+    amenities: ["Lighting", "Paddle rental", "Parking", "Restroom", "Shaded seating"],
+    desc: "Two outdoor pickleball courts with cushioned acrylic surface and stadium lighting for evening play. Paddle rental available on site, and the shaded bench area fits a full rotation waiting their turn.",
+    units: 2,
+    opens: 6,
+    closes: 22,
+    host: "Kitchen Line Club",
+    indoor: false,
+  },
+  {
+    id: 5,
+    slug: "sunrise-courts",
+    sport: "pickleball",
+    name: "Sunrise Courts",
+    loc: "Panabo City, Davao del Norte",
+    city: "Panabo City",
+    price: 320,
+    rating: 4.6,
+    reviewCount: 98,
+    images: gallery("pickleball", "Sunrise Courts"),
+    amenities: ["Early access", "Parking", "Water station", "Ball machine"],
+    desc: "Community-style outdoor courts open from 5am, popular for morning leagues and drop-in play. First light here is genuinely the best hour to play — book it before the regulars do.",
+    units: 3,
+    opens: 5,
+    closes: 20,
+    host: "Sunrise Sports Collective",
+    indoor: false,
+  },
+  {
+    id: 7,
+    slug: "dink-district",
+    sport: "pickleball",
+    name: "Dink District",
+    loc: "Davao City, Davao del Sur",
+    city: "Davao City",
+    price: 420,
+    rating: 4.8,
+    reviewCount: 156,
+    images: gallery("pickleball", "Dink District"),
+    amenities: ["Indoor", "Air-conditioned", "Paddle rental", "Pro shop", "Coaching"],
+    desc: "Four indoor climate-controlled courts with tournament-grade cushioned flooring. Resident coaches run clinics on weekday mornings, and the pro shop restrings paddles same-day.",
+    units: 4,
+    opens: 7,
+    closes: 23,
+    host: "Dink District Manila",
+    indoor: true,
+  },
+  {
+    id: 8,
+    slug: "third-shot-park",
+    sport: "pickleball",
+    name: "Third Shot Park",
+    loc: "Digos City, Davao del Sur",
+    city: "Digos City",
+    price: 300,
+    rating: 4.4,
+    reviewCount: 61,
+    images: gallery("pickleball", "Third Shot Park"),
+    amenities: ["Lighting", "Parking", "Restroom", "Spectator seating"],
+    desc: "Two converted tennis courts re-lined for pickleball, with fresh acrylic laid in 2025. Budget-friendly and rarely fully booked on weekdays.",
+    units: 2,
+    opens: 6,
+    closes: 21,
+    host: "Digos Parks & Recreation",
+    indoor: false,
+  },
+
+  // ---------------------------------------------------------------- badminton
+  {
+    id: 2,
+    slug: "smash-point-arena",
+    sport: "badminton",
+    name: "Smash Point Arena",
+    loc: "Davao City, Davao del Sur",
+    city: "Davao City",
+    price: 280,
+    rating: 4.7,
+    reviewCount: 302,
+    images: gallery("badminton", "Smash Point Arena"),
+    amenities: ["Air-conditioned", "Shuttlecocks included", "Locker room", "Parking", "Canteen"],
+    desc: "Wooden-floor indoor badminton hall with 4 courts, air-conditioned, and shuttlecocks provided for every booking. Ceiling clearance is a genuine 9 metres, so high clears actually stay in play.",
+    units: 4,
+    opens: 6,
+    closes: 23,
+    host: "Smash Point Sports",
+    indoor: true,
+  },
+  {
+    id: 9,
+    slug: "rally-hall-tagum",
+    sport: "badminton",
+    name: "Rally Hall Tagum",
+    loc: "Tagum City, Davao del Norte",
+    city: "Tagum City",
+    price: 260,
+    rating: 4.5,
+    reviewCount: 87,
+    images: gallery("badminton", "Rally Hall Tagum"),
+    amenities: ["Air-conditioned", "Racket rental", "Locker room", "Parking"],
+    desc: "Six-court hall built inside a converted warehouse, with matte non-slip synthetic flooring and no glare from the ceiling LEDs. The cheapest air-conditioned courts in Tagum.",
+    units: 6,
+    opens: 6,
+    closes: 22,
+    host: "Rally Hall Group",
+    indoor: true,
+  },
+  {
+    id: 10,
+    slug: "feather-court-panabo",
+    sport: "badminton",
+    name: "Feather Court Panabo",
+    loc: "Panabo City, Davao del Norte",
+    city: "Panabo City",
+    price: 240,
+    rating: 4.3,
+    reviewCount: 54,
+    images: gallery("badminton", "Feather Court Panabo"),
+    amenities: ["Fan-cooled", "Shuttlecocks for sale", "Parking", "Restroom"],
+    desc: "Three-court community hall, fan-cooled rather than air-conditioned, which keeps the rate low. Popular with the after-work crowd from 7pm onwards.",
+    units: 3,
+    opens: 7,
+    closes: 22,
+    host: "Panabo Community Sports",
+    indoor: true,
+  },
+
+  // ---------------------------------------------------------------- basketball
+  {
+    id: 3,
+    slug: "baseline-fieldhouse",
+    sport: "basketball",
+    name: "Baseline Fieldhouse",
+    loc: "Tagum City, Davao del Norte",
+    city: "Tagum City",
+    price: 500,
+    rating: 4.8,
+    reviewCount: 189,
+    images: gallery("basketball", "Baseline Fieldhouse"),
+    amenities: ["Scoreboard", "Bleachers", "Locker room", "Water station", "Air-conditioned"],
+    desc: "Full-length indoor hardwood court with electronic scoreboard and shot clock, ideal for team runs and tournaments. Bleachers seat 200, and the locker rooms have working showers.",
+    units: 1,
+    opens: 6,
+    closes: 23,
+    host: "Baseline Sports Management",
+    indoor: true,
+  },
+  {
+    id: 6,
+    slug: "backboard-barangay-court",
+    sport: "basketball",
+    name: "Backboard Barangay Court",
+    loc: "Tagum City, Davao del Norte",
+    city: "Tagum City",
+    price: 450,
+    rating: 4.5,
+    reviewCount: 76,
+    images: gallery("basketball", "Backboard Barangay Court"),
+    amenities: ["Half-court option", "Night lighting", "Parking", "Covered"],
+    desc: "Open-air neighborhood court with fresh paint and new rings, offering both half-court and full-court booking. Covered roof means rain doesn't cancel your run.",
+    units: 1,
+    opens: 6,
+    closes: 22,
+    host: "Barangay Magugpo Sports",
+    indoor: false,
+  },
+  {
+    id: 11,
+    slug: "hoop-house-davao",
+    sport: "basketball",
+    name: "Hoop House Davao",
+    loc: "Davao City, Davao del Sur",
+    city: "Davao City",
+    price: 650,
+    rating: 4.9,
+    reviewCount: 241,
+    images: gallery("basketball", "Hoop House Davao"),
+    amenities: ["Hardwood", "Scoreboard", "Shot clock", "Air-conditioned", "Streaming rig", "Locker room"],
+    desc: "Premium hardwood court with a permanent multi-camera streaming rig — every booking can be recorded and downloaded. The most-booked basketball venue on Courtix.",
+    units: 2,
+    opens: 6,
+    closes: 24,
+    host: "Hoop House PH",
+    indoor: true,
+  },
+  {
+    id: 12,
+    slug: "fastbreak-covered-court",
+    sport: "basketball",
+    name: "Fastbreak Covered Court",
+    loc: "Digos City, Davao del Sur",
+    city: "Digos City",
+    price: 400,
+    rating: 4.2,
+    reviewCount: 43,
+    images: gallery("basketball", "Fastbreak Covered Court"),
+    amenities: ["Covered", "Night lighting", "Parking", "Bleachers"],
+    desc: "Covered outdoor court with rubberised surface, floodlit until 10pm. Straightforward, cheap, and reliable for a weeknight run.",
+    units: 1,
+    opens: 6,
+    closes: 22,
+    host: "Digos City Sports Office",
+    indoor: false,
+  },
+
+  // ---------------------------------------------------------------- golf
+  {
+    id: 4,
+    slug: "fairway-bay-simulator",
+    sport: "golf",
+    name: "Fairway Bay Simulator",
+    loc: "Davao City, Davao del Sur",
+    city: "Davao City",
+    price: 900,
+    rating: 5.0,
+    reviewCount: 132,
+    images: gallery("golf", "Fairway Bay Simulator"),
+    amenities: ["Swing analytics", "Club rental", "Snack bar", "Air-conditioned", "60+ courses"],
+    desc: "Indoor golf simulator bay with full swing analytics and 60+ championship courses, booked by the hour. Launch monitor data exports to your phone after every session.",
+    units: 4,
+    opens: 8,
+    closes: 24,
+    host: "Fairway Bay",
+    indoor: true,
+  },
+  {
+    id: 13,
+    slug: "green-bay-golf-bays",
+    sport: "golf",
+    name: "Green Bay Golf Bays",
+    loc: "Davao City, Davao del Sur",
+    city: "Davao City",
+    price: 1100,
+    rating: 4.8,
+    reviewCount: 71,
+    images: gallery("golf", "Green Bay Golf Bays"),
+    amenities: ["Swing analytics", "Club fitting", "Coaching", "Bar", "Air-conditioned"],
+    desc: "Six premium simulator bays with resident PGA-certified coaching and same-day club fitting. The bar stays open until midnight, which explains the weekend waitlist.",
+    units: 6,
+    opens: 10,
+    closes: 24,
+    host: "Green Bay Golf Co.",
+    indoor: true,
+  },
+  {
+    id: 14,
+    slug: "tee-line-driving-range",
+    sport: "golf",
+    name: "Tee Line Driving Range",
+    loc: "Tagum City, Davao del Norte",
+    city: "Tagum City",
+    price: 750,
+    rating: 4.4,
+    reviewCount: 58,
+    images: gallery("golf", "Tee Line Driving Range"),
+    amenities: ["Floodlit", "Club rental", "Ball buckets", "Parking", "Covered stalls"],
+    desc: "Twenty covered range stalls, floodlit to 250 yards, with unlimited balls on the hourly rate. Grass tees open on weekends only.",
+    units: 20,
+    opens: 6,
+    closes: 22,
+    host: "Tee Line Golf",
+    indoor: false,
+  },
+];
+
+export function getCourt(idOrSlug: number | string): Court | undefined {
+  if (typeof idOrSlug === "number") return COURTS.find((c) => c.id === idOrSlug);
+  const asNum = Number(idOrSlug);
+  if (!Number.isNaN(asNum)) return COURTS.find((c) => c.id === asNum);
+  return COURTS.find((c) => c.slug === idOrSlug);
+}
+
+export function courtsBySport(sport: SportSlug): Court[] {
+  return COURTS.filter((c) => c.sport === sport);
+}
+
+export function allCities(): string[] {
+  return [...new Set(COURTS.map((c) => c.city))].sort();
+}
+
+/** "Court 2", "Bay 3" — the display name for a unit within a facility. */
+export function unitLabelFor(court: Court, unitIndex: number): string {
+  const noun = getSport(court.sport)?.unitLabel ?? "court";
+  return `${noun.charAt(0).toUpperCase()}${noun.slice(1)} ${unitIndex + 1}`;
+}
+
+/** Labels for every unit at a facility, e.g. ["Court 1", "Court 2"]. */
+export function unitLabels(court: Court): string[] {
+  return Array.from({ length: court.units }, (_, i) => unitLabelFor(court, i));
+}
