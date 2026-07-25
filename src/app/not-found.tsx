@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteNav } from "@/components/SiteNav";
+import { homeFor } from "@/lib/auth-routes";
+import { getSession } from "@/lib/server/auth";
 
-export default function NotFound() {
+export default async function NotFound() {
+  const user = await getSession();
+
   return (
     <>
-      {/* Global 404: no route group layout, so no session lookup here either. */}
-      <SiteNav account={null} />
+      <SiteNav
+        account={user ? { name: user.name, href: homeFor(user.role) } : null}
+      />
       <main className="shell flex flex-col items-center py-28 text-center">
         <p className="eyebrow mb-6">Error 404</p>
         <h1 className="mb-4 text-[clamp(36px,6vw,64px)] leading-[0.98]">

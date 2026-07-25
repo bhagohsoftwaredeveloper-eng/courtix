@@ -3,10 +3,12 @@
 // ----------------------------------------------------------------------------
 // Loads the catalog the app currently hard-codes in `src/lib/data` into MySQL:
 // sports, cities, amenities, host organizations, facilities and their court
-// units, the open-play sessions, and the demo player profile.
+// units, and the open-play sessions.
 //
-// It reads those files directly rather than restating the data, so the seed
-// can never drift from what the pages render.
+// It reads those files directly rather than restating the data, so the catalog
+// can never drift from what the pages render. The demo player is the one
+// exception: `src/lib/data/player.ts` is gone now that getCurrentPlayer() reads
+// the session, so its fixture is restated as a literal below instead.
 //
 //   npm run db:seed
 //
