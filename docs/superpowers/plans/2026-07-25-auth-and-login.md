@@ -276,9 +276,12 @@ export function homeFor(role: UserRole): string {
  */
 export function safeNext(next: string | null | undefined): string | null {
   if (!next) return null;
-  if (!next.startsWith("/")) return null;
-  if (next.startsWith("//") || next.startsWith("/\\")) return null;
-  return next;
+  // Browsers strip tab, CR and LF before parsing a URL, so "/\t/evil.com"
+  // resolves to "//evil.com". Judge the string the browser will actually see.
+  const cleaned = next.replace(/[\t\r\n]/g, "");
+  if (!cleaned.startsWith("/")) return null;
+  if (cleaned.startsWith("//") || cleaned.startsWith("/\\")) return null;
+  return cleaned;
 }
 
 /** A session is over the moment its expiry is reached. */
