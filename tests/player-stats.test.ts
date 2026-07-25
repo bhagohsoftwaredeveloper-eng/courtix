@@ -120,6 +120,22 @@ describe("playerSessions", () => {
     expect(out[0]).toMatchObject({ kind: "open-play", sport: "badminton", courtId: 5, hours: 2, past: true });
   });
 
+  it("marks a confirmed booking as played", () => {
+    const out = playerSessions([booking({ status: "confirmed" })], [], [], "jomar.r@example.ph", TODAY);
+    expect(out[0].played).toBe(true);
+  });
+
+  it("keeps a pending booking as a session, but not played", () => {
+    const out = playerSessions([booking({ status: "pending" })], [], [], "jomar.r@example.ph", TODAY);
+    expect(out).toHaveLength(1);
+    expect(out[0].played).toBe(false);
+  });
+
+  it("marks an open-play join as played — a confirmed seat is the only kind kept", () => {
+    const out = playerSessions([], [join()], [play()], "jomar.r@example.ph", TODAY);
+    expect(out[0].played).toBe(true);
+  });
+
   it("drops waitlisted joins — a seat you never got is not a session", () => {
     expect(playerSessions([], [join({ waitlisted: true })], [play()], "jomar.r@example.ph", TODAY))
       .toHaveLength(0);
@@ -133,9 +149,9 @@ describe("playerSessions", () => {
 
 describe("playerStats", () => {
   const sessions: PlayerSession[] = [
-    { kind: "booking",   sport: "pickleball", courtId: 1, date: "2026-07-20", hours: 2, past: true },
-    { kind: "booking",   sport: "pickleball", courtId: 1, date: "2026-07-28", hours: 1, past: false },
-    { kind: "open-play", sport: "badminton",  courtId: 5, date: "2026-07-22", hours: 2, past: true },
+    { kind: "booking",   sport: "pickleball", courtId: 1, date: "2026-07-20", hours: 2, past: true, played: true },
+    { kind: "booking",   sport: "pickleball", courtId: 1, date: "2026-07-28", hours: 1, past: false, played: true },
+    { kind: "open-play", sport: "badminton",  courtId: 5, date: "2026-07-22", hours: 2, past: true, played: true },
   ];
 
   it("counts bookings, upcoming and open plays separately", () => {
@@ -160,7 +176,7 @@ describe("playerStats", () => {
 
   it("excludes other months from Cal This Month", () => {
     const s = playerStats(
-      [{ kind: "booking", sport: "pickleball", courtId: 1, date: "2026-06-20", hours: 2, past: true }],
+      [{ kind: "booking", sport: "pickleball", courtId: 1, date: "2026-06-20", hours: 2, past: true, played: true }],
       TODAY,
     );
     expect(s.calThisMonth).toBe(0);
@@ -181,7 +197,7 @@ describe("playerStats", () => {
 
 describe("playerStats week streak", () => {
   const past = (date: string): PlayerSession =>
-    ({ kind: "booking", sport: "pickleball", courtId: 1, date, hours: 1, past: true });
+    ({ kind: "booking", sport: "pickleball", courtId: 1, date, hours: 1, past: true, played: true });
 
   it("counts the current week alone as 1", () => {
     expect(playerStats([past("2026-07-21")], TODAY).weekStreak).toBe(1);
@@ -203,9 +219,46 @@ describe("playerStats week streak", () => {
 
   it("ignores future sessions", () => {
     const s = playerStats(
-      [{ kind: "booking", sport: "pickleball", courtId: 1, date: "2026-07-28", hours: 1, past: false }],
+      [{ kind: "booking", sport: "pickleball", courtId: 1, date: "2026-07-28", hours: 1, past: false, played: true }],
       TODAY,
     );
     expect(s.weekStreak).toBe(0);
+  });
+
+  it("ignores an unplayed booking, even if it's the only session in the current week", () => {
+    const s = playerStats(
+      [{ kind: "booking", sport: "pickleball", courtId: 1, date: "2026-07-21", hours: 1, past: true, played: false }],
+      TODAY,
+    );
+    expect(s.weekStreak).toBe(0);
+  });
+});
+
+describe("playerStats with unplayed bookings", () => {
+  // One booking actually happened; the other is still an unpaid hold. Only
+  // the confirmed one may count as court time.
+  const sessions: PlayerSession[] = [
+    { kind: "booking", sport: "pickleball", courtId: 1, date: "2026-07-20", hours: 2, past: true, played: true },
+    { kind: "booking", sport: "pickleball", courtId: 2, date: "2026-07-21", hours: 2, past: true, played: false },
+  ];
+
+  it("counts both as bookings — the player did make the booking either way", () => {
+    expect(playerStats(sessions, TODAY).totalBookings).toBe(2);
+  });
+
+  it("counts hours only for the played session", () => {
+    expect(playerStats(sessions, TODAY).hoursPlayed).toBe(2);
+  });
+
+  it("counts sessions only for the played session", () => {
+    expect(playerStats(sessions, TODAY).totalSessions).toBe(1);
+  });
+
+  it("counts calories only for the played session", () => {
+    expect(playerStats(sessions, TODAY).calThisMonth).toBe(1000);
+  });
+
+  it("averages calories only over played sessions", () => {
+    expect(playerStats(sessions, TODAY).avgCalPerSession).toBe(1000);
   });
 });

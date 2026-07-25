@@ -48,6 +48,13 @@ export interface PlayerSession {
   date: string; // YYYY-MM-DD
   hours: number;
   past: boolean;
+  /**
+   * Whether court time actually happened — `confirmed`, not just booked.
+   * A held or pending booking still belongs to the player (it counts toward
+   * Total Bookings / Upcoming) but must not earn calories, sessions, or
+   * streak credit until Phase 2's held/no-show statuses can express that.
+   */
+  played: boolean;
 }
 
 export interface PlayerStats {
@@ -83,6 +90,9 @@ export function playerSessions(
       date: b.date,
       hours: b.hours,
       past: b.date < today,
+      // Only a confirmed booking is court time that actually happened; a
+      // pending one is still an unpaid hold.
+      played: b.status === "confirmed",
     });
   }
 
@@ -100,6 +110,9 @@ export function playerSessions(
       date: p.date,
       hours: p.hours,
       past: p.date < today,
+      // A waitlisted join was already filtered out above, so every join kept
+      // here is a confirmed seat — there is no weaker state to represent yet.
+      played: true,
     });
   }
 
@@ -123,7 +136,10 @@ function weekStreak(pastSessions: PlayerSession[], today: string): number {
 export function playerStats(sessions: PlayerSession[], today: string): PlayerStats {
   const bookings = sessions.filter((s) => s.kind === "booking");
   const plays = sessions.filter((s) => s.kind === "open-play");
-  const done = sessions.filter((s) => s.past);
+  // A held or pending booking still made it onto the calendar, so it counts
+  // as a booking — but it is not court time until it's played, so only
+  // past-and-played sessions may earn calories, sessions, or streak credit.
+  const done = sessions.filter((s) => s.past && s.played);
 
   const totalSessions = done.length;
   const totalCal = done.reduce((n, s) => n + caloriesFor(s.sport, s.hours), 0);
