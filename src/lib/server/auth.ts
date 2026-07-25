@@ -3,7 +3,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import type { UserRole } from "@prisma/client";
+import { Prisma, type UserRole } from "@prisma/client";
 
 import { SESSION_COOKIE, homeFor, isExpired } from "@/lib/auth-routes";
 import { db } from "@/lib/server/db";
@@ -65,11 +65,25 @@ export async function getSession(): Promise<SessionUser | null> {
   return row.user;
 }
 
+// Prisma's "record to delete does not exist" error — the only failure mode
+// where the row being gone already satisfies the caller's intent.
+function isRecordNotFound(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
+}
+
 export async function destroySession(): Promise<void> {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
-  // Already-deleted rows are fine — the point is that the token stops working.
-  if (token) await db.session.delete({ where: { sessionToken: token } }).catch(() => {});
+  if (token) {
+    try {
+      await db.session.delete({ where: { sessionToken: token } });
+    } catch (error) {
+      // Already-deleted rows are fine — the token stops working either way.
+      // Anything else (connection loss, timeout, ...) may mean the row is
+      // still live, so it must surface instead of reporting a false sign-out.
+      if (!isRecordNotFound(error)) throw error;
+    }
+  }
   jar.delete(SESSION_COOKIE);
 }
 
