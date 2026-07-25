@@ -221,12 +221,12 @@ Run with `npm test`.
 Flows verified by running the app, since they span middleware, layouts and
 cookies:
 
-- [ ] Log in as each of the three accounts → lands on the right home
-- [ ] `/admin` signed out → redirected to `/login?next=/admin`, and after login lands on `/admin`
-- [ ] `/owner` signed in as the player → redirected to `/player-home`
-- [ ] Sign out → cookie cleared, `/owner` redirects to login again
-- [ ] Wrong password → inline error, email preserved, no redirect
-- [ ] `npm run lint` and `npm run typecheck` clean
+- [x] Log in as each of the three accounts → lands on the right home
+- [x] `/admin` signed out → redirected to `/login?next=/admin`, and after login lands on `/admin`
+- [x] `/owner` signed in as the player → redirected to `/player-home`
+- [x] Sign out → cookie cleared, `/owner` redirects to login again
+- [x] Wrong password → inline error, email preserved, no redirect
+- [x] `npm run lint` and `npm run typecheck` clean
 
 ---
 
@@ -253,9 +253,9 @@ else on that page keeps working from the static catalog.
 
 ## 9. Definition of done
 
-- [ ] `User.passwordHash` in the schema and pushed
-- [ ] Three seeded accounts log in and land on the right home
-- [ ] `/owner` and `/admin` unreachable signed out, and unreachable by the wrong role
-- [ ] Sign-out works from both dashboards
-- [ ] `SiteNav` reflects signed-in state
-- [ ] vitest suite passes; `npm run lint` and `npm run typecheck` clean
+- [x] `User.passwordHash` in the schema and pushed
+- [x] Three seeded accounts log in and land on the right home
+- [x] `/owner` and `/admin` unreachable signed out, and unreachable by the wrong role
+- [x] Sign-out works from both dashboards
+- [x] `SiteNav` reflects signed-in state
+- [x] vitest suite passes; `npm run lint` and `npm run typecheck` clean
