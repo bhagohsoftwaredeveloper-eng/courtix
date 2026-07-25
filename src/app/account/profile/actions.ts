@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 
 import { ProfileInput } from "@/app/account/profile/schema";
+import { SPORT_SLUGS } from "@/lib/data/sports";
 import { requireUser } from "@/lib/server/auth";
+import { listLiveCities } from "@/lib/server/catalog";
 import { db } from "@/lib/server/db";
 
 export interface ProfileState {
@@ -36,6 +38,26 @@ export async function saveProfileAction(
   }
 
   const { name, phone, homeCityId, skill, rating, sportIds } = parsed.data;
+
+  // The zod schema only checks shape; these two checks need database/static-catalog
+  // state a schema can't see, so they run here, before the transaction touches
+  // any foreign-key-constrained column.
+  const errors: Record<string, string> = {};
+
+  if (sportIds.some((sportId) => !(SPORT_SLUGS as string[]).includes(sportId))) {
+    errors.sportIds = "Pick from the listed sports";
+  }
+
+  if (homeCityId !== "") {
+    const liveCities = await listLiveCities();
+    if (!liveCities.some((city) => city.id === homeCityId)) {
+      errors.homeCityId = "Pick a city from the list";
+    }
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return { errors };
+  }
 
   await db.$transaction(async (tx) => {
     await tx.user.update({

@@ -55,6 +55,7 @@ export function ProfileForm({
             </option>
           ))}
         </select>
+        {err("homeCityId") && <span className="mt-1 block text-[11.5px] text-[#ff9370]">{err("homeCityId")}</span>}
       </label>
 
       <label className="mb-4 block">
@@ -89,6 +90,7 @@ export function ProfileForm({
             </label>
           ))}
         </div>
+        {err("sportIds") && <span className="mt-1 block text-[11.5px] text-[#ff9370]">{err("sportIds")}</span>}
       </fieldset>
 
       <button type="submit" disabled={pending} className="btn btn-solid w-full py-3 text-sm disabled:opacity-60">
