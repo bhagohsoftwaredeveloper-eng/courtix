@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
+import { logoutAction } from "@/app/(site)/login/actions";
 
 export interface NavItem {
   href: string;
@@ -14,9 +15,11 @@ export interface NavItem {
 export function DashSidebar({
   role,
   items,
+  user,
 }: {
   role: string;
   items: NavItem[];
+  user: { name: string; email: string };
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -47,6 +50,21 @@ export function DashSidebar({
     </nav>
   );
 
+  const account = (
+    <div className="border-t border-line-white/8 pt-3">
+      <p className="truncate px-3 text-[12.5px] font-semibold text-line-white">{user.name}</p>
+      <p className="mb-2 truncate px-3 text-[11px] text-muted">{user.email}</p>
+      <form action={logoutAction}>
+        <button
+          type="submit"
+          className="w-full rounded-[10px] px-3 py-2 text-left text-[12.5px] font-semibold text-muted transition-colors hover:text-ball-yellow"
+        >
+          Sign out
+        </button>
+      </form>
+    </div>
+  );
+
   return (
     <>
       {/* mobile bar */}
@@ -67,9 +85,10 @@ export function DashSidebar({
             {role}
           </p>
           {links}
-          <Link href="/" className="mt-3 block text-[12.5px] font-bold text-ball-yellow">
+          <Link href="/" className="mt-3 mb-3 block text-[12.5px] font-bold text-ball-yellow">
             ← Back to site
           </Link>
+          {account}
         </div>
       )}
 
@@ -82,12 +101,15 @@ export function DashSidebar({
           {role}
         </p>
         {links}
-        <Link
-          href="/"
-          className="mt-auto px-3 py-2.5 text-[12.5px] font-semibold text-muted transition-colors hover:text-ball-yellow"
-        >
-          ← Back to site
-        </Link>
+        <div className="mt-auto">
+          <Link
+            href="/"
+            className="block px-3 py-2.5 text-[12.5px] font-semibold text-muted transition-colors hover:text-ball-yellow"
+          >
+            ← Back to site
+          </Link>
+          {account}
+        </div>
       </aside>
     </>
   );

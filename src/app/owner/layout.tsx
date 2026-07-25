@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { DashSidebar, type NavItem } from "@/components/dashboard/DashSidebar";
+import { requireRole } from "@/lib/server/auth";
+import { db } from "@/lib/server/db";
 
 export const metadata: Metadata = {
   title: { default: "Owner dashboard", template: "%s · Courtix Owner" },
@@ -16,10 +18,22 @@ const NAV: NavItem[] = [
   { href: "/owner/settings", label: "Settings", icon: "⚙" },
 ];
 
-export default function OwnerLayout({ children }: { children: React.ReactNode }) {
+export default async function OwnerLayout({ children }: { children: React.ReactNode }) {
+  const user = await requireRole("OWNER");
+
+  // The sidebar names the facility this owner actually manages.
+  const membership = await db.organizationMember.findFirst({
+    where: { userId: user.id },
+    select: { org: { select: { name: true } } },
+  });
+
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      <DashSidebar role="Owner · Kitchen Line Club" items={NAV} />
+      <DashSidebar
+        role={`Owner · ${membership?.org.name ?? "No facility yet"}`}
+        items={NAV}
+        user={{ name: user.name, email: user.email }}
+      />
       <div className="min-w-0 flex-1 px-5 py-7 lg:px-8 lg:py-7">{children}</div>
     </div>
   );

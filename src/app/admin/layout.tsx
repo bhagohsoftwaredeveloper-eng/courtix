@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DashSidebar, type NavItem } from "@/components/dashboard/DashSidebar";
+import { requireRole } from "@/lib/server/auth";
 
 export const metadata: Metadata = {
   title: { default: "Platform admin", template: "%s · Courtix Admin" },
@@ -17,10 +18,16 @@ const NAV: NavItem[] = [
   { href: "/admin/settings", label: "Platform settings", icon: "⚙" },
 ];
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const user = await requireRole("ADMIN", "SUPER_ADMIN");
+
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      <DashSidebar role="Super Admin · Platform" items={NAV} />
+      <DashSidebar
+        role="Super Admin · Platform"
+        items={NAV}
+        user={{ name: user.name, email: user.email }}
+      />
       <div className="min-w-0 flex-1 px-5 py-7 lg:px-8 lg:py-7">{children}</div>
     </div>
   );
