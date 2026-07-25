@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DashSidebar, type NavItem } from "@/components/dashboard/DashSidebar";
+import { DashSidebar, type NavSection } from "@/components/dashboard/DashSidebar";
 import { requireRole } from "@/lib/server/auth";
 import { db } from "@/lib/server/db";
 
@@ -8,14 +8,18 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-const NAV: NavItem[] = [
-  { href: "/owner", label: "Dashboard", icon: "▤" },
-  { href: "/owner/bookings", label: "Bookings", icon: "📅" },
-  { href: "/owner/courts", label: "My courts", icon: "◆" },
-  { href: "/owner/players", label: "Players", icon: "☺" },
-  { href: "/owner/payouts", label: "Payouts", icon: "₱" },
-  { href: "/owner/reports", label: "Reports", icon: "▦" },
-  { href: "/owner/settings", label: "Settings", icon: "⚙" },
+const NAV: NavSection[] = [
+  {
+    items: [
+      { href: "/owner", label: "Dashboard", icon: "▤" },
+      { href: "/owner/bookings", label: "Bookings", icon: "📅" },
+      { href: "/owner/courts", label: "My courts", icon: "◆" },
+      { href: "/owner/players", label: "Players", icon: "☺" },
+      { href: "/owner/payouts", label: "Payouts", icon: "₱" },
+      { href: "/owner/reports", label: "Reports", icon: "▦" },
+      { href: "/owner/settings", label: "Settings", icon: "⚙" },
+    ],
+  },
 ];
 
 export default async function OwnerLayout({ children }: { children: React.ReactNode }) {
@@ -33,8 +37,9 @@ export default async function OwnerLayout({ children }: { children: React.ReactN
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
       <DashSidebar
-        role={`Owner · ${membership?.org.name ?? "No facility yet"}`}
-        items={NAV}
+        role="Owner"
+        subtitle={membership?.org.name ?? "No facility yet"}
+        sections={NAV}
         user={{ name: user.name, email: user.email }}
       />
       <div className="min-w-0 flex-1 px-5 py-7 lg:px-8 lg:py-7">{children}</div>
