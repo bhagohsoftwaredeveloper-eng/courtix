@@ -237,9 +237,13 @@ describe("playerStats week streak", () => {
 describe("playerStats with unplayed bookings", () => {
   // One booking actually happened; the other is still an unpaid hold. Only
   // the confirmed one may count as court time.
+  // The two sessions are intentionally asymmetric (different sport and duration)
+  // so that the average-calorie assertion genuinely fails if the split is omitted:
+  // with identical sessions, avgCal would be 1000 both with and without filtering
+  // on played, making the test pass against a broken implementation.
   const sessions: PlayerSession[] = [
     { kind: "booking", sport: "pickleball", courtId: 1, date: "2026-07-20", hours: 2, past: true, played: true },
-    { kind: "booking", sport: "pickleball", courtId: 2, date: "2026-07-21", hours: 2, past: true, played: false },
+    { kind: "booking", sport: "basketball", courtId: 2, date: "2026-07-21", hours: 3, past: true, played: false },
   ];
 
   it("counts both as bookings — the player did make the booking either way", () => {
