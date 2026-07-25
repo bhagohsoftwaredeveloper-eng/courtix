@@ -30,6 +30,12 @@ describe("safeNext", () => {
     expect(safeNext("https://evil.com")).toBeNull();
     expect(safeNext("javascript:alert(1)")).toBeNull();
     expect(safeNext("owner")).toBeNull();
+    // Browsers strip control characters before parsing, so "/\t/evil.com"
+    // resolves to "//evil.com", a protocol-relative URL.
+    expect(safeNext("/\t/evil.com")).toBeNull();
+    expect(safeNext("/\n/evil.com")).toBeNull();
+    expect(safeNext("/\r/evil.com")).toBeNull();
+    expect(safeNext("/\t\t//evil.com")).toBeNull();
   });
 
   it("treats absent input as no destination", () => {
