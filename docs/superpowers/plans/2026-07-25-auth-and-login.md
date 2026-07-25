@@ -1245,6 +1245,9 @@ export default async function OwnerLayout({ children }: { children: React.ReactN
   // The sidebar names the facility this owner actually manages.
   const membership = await db.organizationMember.findFirst({
     where: { userId: user.id },
+    // An owner can belong to several orgs; order so the sidebar name is stable
+    // between requests. Choosing among them properly is a later-phase concern.
+    orderBy: { orgId: "asc" },
     select: { org: { select: { name: true } } },
   });
 
