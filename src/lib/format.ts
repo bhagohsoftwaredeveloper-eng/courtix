@@ -64,3 +64,14 @@ export function chipParts(iso: string): { weekday: string; day: number } {
     day: d,
   };
 }
+
+/**
+ * "Rex I.T Support" -> "RI". Two words in, two letters out; a single word
+ * gives up its first two. Used by the avatar in the nav and the sidebar.
+ */
+export function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
