@@ -21,7 +21,7 @@ export function homeFor(role: UserRole): string {
       return "/admin";
     case "PLAYER":
     default:
-      return "/player-home";
+      return "/account";
   }
 }
 

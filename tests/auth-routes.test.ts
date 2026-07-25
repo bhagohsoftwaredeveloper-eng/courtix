@@ -10,7 +10,7 @@ describe("SESSION_COOKIE", () => {
 
 describe("homeFor", () => {
   it("sends each role to its own dashboard", () => {
-    expect(homeFor("PLAYER")).toBe("/player-home");
+    expect(homeFor("PLAYER")).toBe("/account");
     expect(homeFor("OWNER")).toBe("/owner");
     expect(homeFor("ADMIN")).toBe("/admin");
     expect(homeFor("SUPER_ADMIN")).toBe("/admin");
