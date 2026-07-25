@@ -625,11 +625,24 @@ export async function getSession(): Promise<SessionUser | null> {
   return row.user;
 }
 
+// Prisma's "record to delete does not exist" error — the only failure mode
+// where the row being gone already satisfies the caller's intent.
+function isRecordNotFound(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
+}
+
 export async function destroySession(): Promise<void> {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
-  // Already-deleted rows are fine — the point is that the token stops working.
-  if (token) await db.session.delete({ where: { sessionToken: token } }).catch(() => {});
+  if (token) {
+    try {
+      await db.session.delete({ where: { sessionToken: token } });
+    } catch (error) {
+      // Any other failure may mean the row is still live, so it must surface
+      // instead of reporting a false sign-out.
+      if (!isRecordNotFound(error)) throw error;
+    }
+  }
   jar.delete(SESSION_COOKIE);
 }
 
