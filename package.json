@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint src scripts prisma tests",
     "test": "vitest run",
@@ -13,6 +14,9 @@
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio"
+  },
+  "engines": {
+    "node": "24.x"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
