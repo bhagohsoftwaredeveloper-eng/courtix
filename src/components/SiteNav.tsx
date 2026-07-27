@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AccountMenu } from "@/components/AccountMenu";
-import { Logo } from "@/components/Logo";
+import { Wordmark } from "@/components/Logo";
 
 const LINKS = [
   { href: "/courts", label: "Find a court" },
@@ -28,7 +28,7 @@ export function SiteNav({
   return (
     <nav className="sticky top-0 z-[100] border-b border-line-white/8 bg-court-deep/86 backdrop-blur-[10px]">
       <div className="shell flex h-[76px] items-center justify-between">
-        <Logo />
+        <Wordmark height={26} priority />
 
         <div className="hidden gap-9 text-sm font-semibold text-muted lg:flex">
           {LINKS.map((l) => (

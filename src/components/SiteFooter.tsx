@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Logo } from "@/components/Logo";
+import { Wordmark } from "@/components/Logo";
 import { SPORTS } from "@/lib/data/sports";
 
 const COLUMNS = [
@@ -30,7 +30,7 @@ export function SiteFooter() {
       <div className="shell">
         <div className="grid gap-10 pb-12 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
-            <Logo size={18} />
+            <Wordmark height={22} />
             <p className="mt-4 max-w-[280px] text-[13px] leading-relaxed text-muted">
               Every sport, every court, one booking. Courtix lists bookable courts across Davao del
               Norte and Davao del Sur — with live availability instead of a group chat.
