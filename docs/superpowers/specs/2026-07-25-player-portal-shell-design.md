@@ -285,11 +285,11 @@ that `/player-home` redirects.
 
 ## 8. Definition of done
 
-- [ ] `/account` renders the sidebar, user card and role badge
-- [ ] Eight tiles compute correctly from real stored bookings and joins
-- [ ] Both progress panels render, with the calorie estimate footnote
-- [ ] Edit Profile round-trips every field and creates a missing profile row
-- [ ] Avatar dropdown opens, is keyboard accessible, and signs out
-- [ ] `/player-home` redirects to `/account`; footer and `homeFor` agree
-- [ ] Owner and admin sidebars are visually unchanged
-- [ ] vitest covers the metrics; `npm run lint` and `npm run typecheck` clean
+- [x] `/account` renders the sidebar, user card and role badge
+- [x] Eight tiles compute correctly from real stored bookings and joins
+- [x] Both progress panels render, with the calorie estimate footnote
+- [x] Edit Profile round-trips every field and creates a missing profile row
+- [x] Avatar dropdown opens, is keyboard accessible, and signs out
+- [x] `/player-home` redirects to `/account`; footer and `homeFor` agree
+- [x] Owner and admin sidebars are visually unchanged
+- [x] vitest covers the metrics; `npm run lint` and `npm run typecheck` clean
