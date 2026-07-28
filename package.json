@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "postinstall": "prisma generate",
-    "start": "next start",
+    "start": "prisma migrate deploy && next start",
     "lint": "eslint src scripts prisma tests",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
