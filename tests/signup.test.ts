@@ -30,7 +30,10 @@ describe("SignupInput", () => {
     expect(parse({ name: "   " }).success).toBe(false);
   });
 
-  it("rejects a name over 80 characters", () => {
+  // Both sides of the boundary: asserting only the rejection would let a
+  // regression that also rejected valid 80-character names pass unnoticed.
+  it("accepts a name of exactly 80 characters and rejects 81", () => {
+    expect(parse({ name: "a".repeat(80) }).success).toBe(true);
     expect(parse({ name: "a".repeat(81) }).success).toBe(false);
   });
 
