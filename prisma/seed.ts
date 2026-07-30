@@ -59,16 +59,14 @@ function monthYear(value: string): Date {
 }
 
 /**
- * Seeded accounts exist so the three dashboards can be opened locally. They are
- * skipped entirely in production — a published password on a live platform is
- * a back door, not a convenience.
+ * Seeded accounts exist so the three dashboards can be opened locally and in
+ * demos — the standardized demo credentials (password: demo1234) are needed
+ * for testing all three role dashboards (player, owner, admin).
  */
 const DEMO_PASSWORD = "demo1234";
-const isProduction = process.env.NODE_ENV === "production";
 
 let demoHash: string | null = null;
 async function demoPassword(): Promise<string | null> {
-  if (isProduction) return null;
   demoHash ??= await hashPassword(DEMO_PASSWORD);
   return demoHash;
 }
@@ -343,7 +341,7 @@ async function main(): Promise<void> {
   }
 
   // ------------------------------------------------------------ staff logins
-  if (!isProduction) {
+  {
     const ownerOrg = await db.organization.findUnique({
       where: { slug: "kitchen-line-club" },
       select: { id: true, name: true },
@@ -390,7 +388,7 @@ async function main(): Promise<void> {
       `  ${COURTS.length} facilities · ${unitCount} court units`,
       `  ${plays.length} open plays · ${joinCount} seats taken`,
       "  1 demo player + profile",
-      isProduction ? "  staff logins skipped (production)" : "  3 login accounts (password: demo1234)",
+      "  3 login accounts (password: demo1234)",
       "  1 platform settings row",
     ].join("\n"),
   );
