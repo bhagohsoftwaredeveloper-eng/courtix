@@ -1080,9 +1080,9 @@ export function SiteNav({
 - [ ] **Step 7: Fix the `SiteNav` call site**
 
 Run: `grep -rn "SiteNav" src/app/`
-Expected: one hit, in `src/app/(site)/layout.tsx`.
+Expected: **two** call sites — `src/app/(site)/layout.tsx` and `src/app/not-found.tsx`. The 404 page renders outside the `(site)` route group, so it builds its own nav and reads the session itself. Both need the same edit, or Step 8's typecheck fails.
 
-In that file, replace the `account` prop:
+In **each** file, replace the `account` prop:
 
 ```tsx
         account={
@@ -1130,7 +1130,7 @@ Signed in as a player with no membership: `/account` shows **no** "Switch portal
 - [ ] **Step 11: Commit**
 
 ```bash
-git add src/components/dashboard/DashSidebar.tsx src/components/AccountMenu.tsx src/components/SiteNav.tsx "src/app/(site)/layout.tsx" src/app/account/layout.tsx src/app/owner/layout.tsx src/app/admin/layout.tsx
+git add src/components/dashboard/DashSidebar.tsx src/components/AccountMenu.tsx src/components/SiteNav.tsx "src/app/(site)/layout.tsx" src/app/not-found.tsx src/app/account/layout.tsx src/app/owner/layout.tsx src/app/admin/layout.tsx
 git commit -m "$(cat <<'EOF'
 feat(nav): add the portal switcher to all three dashboards
 
