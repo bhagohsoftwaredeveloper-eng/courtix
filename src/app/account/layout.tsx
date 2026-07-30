@@ -8,21 +8,32 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-// Only links whose pages exist in this chunk. Bookings, wallet, notifications
-// and the support/legal group arrive with chunks B, C and D.
 const NAV: NavSection[] = [
   {
     title: "Your account",
     items: [
       { href: "/account", label: "Player Dashboard", icon: "☺" },
       { href: "/account/profile", label: "Edit Profile", icon: "✎" },
+      { href: "/account/bookings", label: "My Bookings", icon: "▤" },
+      { href: "/account/open-plays", label: "My Open Plays", icon: "☰" },
     ],
   },
   {
     title: "Quick actions",
     items: [
       { href: "/courts", label: "Book a Court", icon: "◆" },
-      { href: "/open-plays", label: "Join Open Play", icon: "☰" },
+      { href: "/open-plays", label: "Join Open Play", icon: "⚡" },
+    ],
+  },
+  {
+    title: "Support & legal",
+    items: [
+      { href: "/help", label: "Help", icon: "?" },
+      { href: "/report-issue", label: "Report Issue", icon: "⚑" },
+      { href: "/contact", label: "Contact Us", icon: "✉" },
+      { href: "/privacy", label: "Privacy Policy", icon: "◇" },
+      { href: "/terms", label: "Terms & Conditions", icon: "§" },
+      { href: "/cookies", label: "Cookie Policy", icon: "◉" },
     ],
   },
 ];

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { logoutAction } from "@/app/(site)/login/actions";
-import { Logo } from "@/components/Logo";
+import { Wordmark } from "@/components/Logo";
 import { initialsOf } from "@/lib/format";
 
 export interface NavItem {
@@ -112,7 +112,7 @@ export function DashSidebar({
     <>
       {/* mobile bar */}
       <div className="sticky top-0 z-50 flex items-center justify-between border-b border-line-white/8 bg-court-deep px-4 py-3.5 lg:hidden">
-        <Logo size={17} />
+        <Wordmark height={18} />
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
@@ -136,7 +136,7 @@ export function DashSidebar({
       {/* desktop rail */}
       <aside className="sticky top-0 hidden h-screen w-[236px] flex-none flex-col overflow-y-auto border-r border-line-white/8 bg-court-deep px-4 py-6 lg:flex">
         <div className="px-2 pb-6">
-          <Logo size={20} />
+          <Wordmark height={21} />
         </div>
         {identity}
         {nav}

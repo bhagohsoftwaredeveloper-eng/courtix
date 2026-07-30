@@ -41,6 +41,14 @@ enum SkillLevel {
   ADVANCED
 }
 
+// Self-declared and always optional — the profile form offers a way to decline.
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
 enum OpenPlaySkill {
   BEGINNER
   INTERMEDIATE
@@ -193,6 +201,7 @@ model User {
 
   // Profiles
   playerProfile PlayerProfile?
+  avatar        UserAvatar?
   memberships   OrganizationMember[]
 
   // Activity
@@ -254,12 +263,30 @@ model PlayerProfile {
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   skill       SkillLevel  @default(BEGINNER)
   rating      Decimal?    @db.Decimal(3, 2) // DUPR-style, e.g. 3.50
+  // The player's DUPR account number, typed in by hand. Nothing verifies it
+  // against DUPR yet — there is no partner API wired up.
+  duprId      String?
+  gender      Gender?
   homeCityId  String?
   homeCity    City?       @relation(fields: [homeCityId], references: [id])
   memberSince DateTime    @default(now())
   favourites  PlayerSport[]
 
   @@index([homeCityId])
+}
+
+/// An uploaded profile photo, stored as bytes rather than on a CDN.
+///
+/// Deliberately its own table: `getSession()` selects from `User` on every
+/// single request, and a column holding megabytes of image would be dragged
+/// along with it. Nothing joins to this — the avatar route loads it by id and
+/// serves it directly.
+model UserAvatar {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  data      Bytes    @db.LongBlob
+  mimeType  String
+  updatedAt DateTime @updatedAt
 }
 
 // A host business. One org can own many facilities and have several members.
@@ -752,8 +779,11 @@ model Dispute {
   id             String        @id @default(cuid())
   bookingId      String?
   booking        Booking?      @relation(fields: [bookingId], references: [id])
-  facilityId     String
-  facility       Facility      @relation(fields: [facilityId], references: [id])
+  // Nullable so the support queue can hold reports that are about the platform
+  // rather than a venue — "the app won't load" has no facility to point at.
+  // A dispute raised from a booking still carries that booking's facility.
+  facilityId     String?
+  facility       Facility?     @relation(fields: [facilityId], references: [id])
   raisedById     String
   raisedBy       User          @relation("DisputeRaisedBy", fields: [raisedById], references: [id])
   type           DisputeType
