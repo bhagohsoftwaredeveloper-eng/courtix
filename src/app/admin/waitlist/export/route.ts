@@ -1,4 +1,4 @@
-import { requireRole } from "@/lib/server/auth";
+import { requirePlatformRole } from "@/lib/server/auth";
 import { getStorage } from "@/lib/server/storage";
 import { waitlistCsv } from "@/lib/waitlist";
 
@@ -12,7 +12,7 @@ import { waitlistCsv } from "@/lib/waitlist";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  await requireRole("ADMIN", "SUPER_ADMIN");
+  await requirePlatformRole("ADMIN", "SUPER_ADMIN");
 
   const entries = await getStorage().listWaitlist();
   const today = new Date().toISOString().slice(0, 10);
