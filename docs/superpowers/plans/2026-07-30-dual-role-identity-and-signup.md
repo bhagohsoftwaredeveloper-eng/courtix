@@ -195,17 +195,112 @@ ALTER TABLE `OrganizationMember`
 Run: `npx prisma migrate dev`
 Expected: the migration applies cleanly and Prisma regenerates the client. If it errors on an unknown column, re-read the `Organization` model — `id`, `slug`, `name`, `contactEmail`, `createdAt`, `updatedAt` are the only non-nullable columns it has.
 
-- [ ] **Step 7: Verify no OWNER survives on User, and every former owner kept a membership**
+- [ ] **Step 7: Verify the migration, including the backfill branch**
 
-Run:
-```bash
-npx prisma db execute --stdin <<'SQL'
-SELECT
-  (SELECT COUNT(*) FROM `User` WHERE `role` = 'PLAYER')            AS players,
-  (SELECT COUNT(*) FROM `OrganizationMember` WHERE `role` = 'OWNER') AS owner_memberships;
-SQL
+`prisma db execute` runs statements but **does not print rows**, so it cannot verify a `SELECT`. Read results with a `tsx` script instead. It must live inside the repo — a script outside the project cannot resolve `@prisma/client`. Use `.superpowers/sdd/`, which is git-ignored.
+
+This database has 41 `PLAYER`, 1 `OWNER`, 1 `SUPER_ADMIN`, one `OrganizationMember`, and **zero owners without a membership** — so the backfill in Step 5 would insert nothing and go untested. Exercise it deliberately.
+
+**Before Step 6's `migrate dev`**, create a throwaway orphan owner. Write `.superpowers/sdd/seed-orphan.ts`:
+
+```ts
+import { PrismaClient } from "@prisma/client";
+
+const db = new PrismaClient();
+
+db.user
+  .create({
+    data: {
+      email: "orphan-owner@migration-test.invalid",
+      name: "Orphan Owner",
+      role: "OWNER",
+    },
+    select: { id: true },
+  })
+  .then((u) => console.log("created orphan owner", u.id))
+  .finally(() => db.$disconnect());
 ```
-Expected: `owner_memberships` is at least 1 (the seeded `owner@kitchenline.ph`), and the command exits 0. A non-zero count of `User.role = 'OWNER'` is now impossible — the enum no longer contains it.
+
+Run: `npx tsx .superpowers/sdd/seed-orphan.ts`
+Expected: `created orphan owner <cuid>`.
+
+> If Step 6 has already been run, this row cannot be created — `OWNER` is gone from the enum. In that case skip the orphan check and record in your report that the backfill branch was **not** exercised.
+
+Then run Step 6, and afterwards write `.superpowers/sdd/verify-roles.ts`:
+
+```ts
+import { PrismaClient } from "@prisma/client";
+
+const db = new PrismaClient();
+
+async function main() {
+  const users = await db.user.groupBy({ by: ["role"], _count: true });
+  const members = await db.organizationMember.groupBy({ by: ["role"], _count: true });
+
+  // The backfilled orphan: it must now be a PLAYER holding an OWNER membership.
+  const orphan = await db.user.findUnique({
+    where: { email: "orphan-owner@migration-test.invalid" },
+    select: { role: true, memberships: { select: { role: true, org: { select: { slug: true } } } } },
+  });
+
+  console.log("USER_ROLES     =", JSON.stringify(users));
+  console.log("ORGMEMBER_ROLES=", JSON.stringify(members));
+  console.log("ORPHAN         =", JSON.stringify(orphan));
+}
+
+main()
+  .catch((e) => {
+    console.error("ERR", e.message);
+    process.exit(1);
+  })
+  .finally(() => db.$disconnect());
+```
+
+Run: `npx tsx .superpowers/sdd/verify-roles.ts`
+
+Expected, exactly:
+- `USER_ROLES` contains only `PLAYER` and `SUPER_ADMIN`. **No `OWNER`** — 42 players (41 + the backfilled orphan) and 1 super admin.
+- `ORGMEMBER_ROLES` shows 2 rows of `OWNER` (the seeded Kitchen Line owner, plus the orphan's backfilled membership).
+- `ORPHAN` is `{"role":"PLAYER","memberships":[{"role":"OWNER","org":{"slug":"host-<the orphan's id, lowercased>"}}]}`.
+
+That last line is the proof the backfill worked: an owner that had no organization now has one, and kept owner access.
+
+- [ ] **Step 7b: Delete the throwaway rows**
+
+Write `.superpowers/sdd/drop-orphan.ts`:
+
+```ts
+import { PrismaClient } from "@prisma/client";
+
+const db = new PrismaClient();
+
+async function main() {
+  const user = await db.user.findUnique({
+    where: { email: "orphan-owner@migration-test.invalid" },
+    select: { id: true },
+  });
+  if (!user) return console.log("no orphan to remove");
+
+  // Membership rows cascade with the user; the organization does not.
+  await db.user.delete({ where: { id: user.id } });
+  const org = await db.organization.deleteMany({ where: { slug: `host-${user.id.toLowerCase()}` } });
+  console.log("removed orphan user and", org.count, "organization(s)");
+}
+
+main()
+  .catch((e) => {
+    console.error("ERR", e.message);
+    process.exit(1);
+  })
+  .finally(() => db.$disconnect());
+```
+
+Run: `npx tsx .superpowers/sdd/drop-orphan.ts`
+Expected: `removed orphan user and 1 organization(s)`.
+
+Then confirm the database is back to its real population — run `verify-roles.ts` again and expect `USER_ROLES` to show 41 `PLAYER` + 1 `SUPER_ADMIN`, `ORGMEMBER_ROLES` one `OWNER`, and `ORPHAN` `null`.
+
+The three scripts live in git-ignored scratch, so there is nothing to remove from the commit.
 
 - [ ] **Step 8: Fix the seed's owner block**
 
@@ -1945,12 +2040,27 @@ Run: `npm run dev`
 5. The owner sidebar shows "☺ Player Dashboard"; click it and you are back on `/account`, which now shows "◆ Owner Dashboard".
 6. Open `/list-your-court/start` again — it redirects to `/owner`.
 7. Sign out and open `/list-your-court/start` — you are sent to `/login?next=/list-your-court/start`, and logging in returns you to the form.
-8. Create a second host with the **same** business name as the first, using a different account. Both succeed, and the second organization's slug carries a `-1` suffix. Verify with:
-   ```bash
-   npx prisma db execute --stdin <<'SQL'
-   SELECT `slug`, `name` FROM `Organization` ORDER BY `createdAt` DESC LIMIT 5;
-   SQL
+8. Create a second host with the **same** business name as the first, using a different account. Both succeed, and the second organization's slug carries a `-1` suffix.
+
+   `prisma db execute` cannot print rows, so read them with a script. Write `.superpowers/sdd/list-orgs.ts` (git-ignored scratch, and it must live inside the repo to resolve `@prisma/client`):
+
+   ```ts
+   import { PrismaClient } from "@prisma/client";
+
+   const db = new PrismaClient();
+
+   db.organization
+     .findMany({
+       orderBy: { createdAt: "desc" },
+       take: 5,
+       select: { slug: true, name: true },
+     })
+     .then((rows) => console.log(JSON.stringify(rows, null, 2)))
+     .finally(() => db.$disconnect());
    ```
+
+   Run: `npx tsx .superpowers/sdd/list-orgs.ts`
+   Expected: the two newest rows share a `name` and differ by slug — one bare, one suffixed `-1`.
 
 - [ ] **Step 16: Commit**
 
