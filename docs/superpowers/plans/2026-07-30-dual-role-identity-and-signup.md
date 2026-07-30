@@ -1093,10 +1093,14 @@ describe("SignupInput", () => {
   });
 
   it("trims the name and requires two characters", () => {
-    expect(parse({ name: "  Jo  " }).success).toBe(true);
-    if (parse({ name: "  Jo  " }).success) {
-      expect(parse({ name: "  Jo  " }).data!.name).toBe("Jo");
-    }
+    const trimmed = parse({ name: "  Jo  " });
+    expect(trimmed.success).toBe(true);
+    // Asserted unconditionally: guarding this behind `if (trimmed.success)`
+    // would let the check vanish silently the day trimming regresses.
+    expect(trimmed.data!.name).toBe("Jo");
+
+    // One character survives the trim but fails the minimum; whitespace alone
+    // leaves nothing at all.
     expect(parse({ name: " J " }).success).toBe(false);
     expect(parse({ name: "   " }).success).toBe(false);
   });
