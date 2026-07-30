@@ -9,6 +9,10 @@ describe("SESSION_COOKIE", () => {
 });
 
 describe("homeFor", () => {
+  // Owners land here too. Owner-ness is not a platform role and never changes
+  // the landing route — the sidebar's portal switcher is how they reach /owner.
+  // That there is no owner destination is guaranteed by PlatformRole itself:
+  // homeFor("OWNER") no longer compiles, so no runtime case can assert it.
   it("lands players on the player dashboard", () => {
     expect(homeFor("PLAYER")).toBe("/account");
   });
@@ -16,13 +20,6 @@ describe("homeFor", () => {
   it("lands platform staff on the admin dashboard", () => {
     expect(homeFor("ADMIN")).toBe("/admin");
     expect(homeFor("SUPER_ADMIN")).toBe("/admin");
-  });
-
-  // Owners land on /account like every other player. Owner-ness is not a
-  // platform role and never changes the landing route — the portal switcher
-  // in the sidebar is how they reach /owner.
-  it("has no owner destination", () => {
-    expect(homeFor("PLAYER")).toBe("/account");
   });
 });
 

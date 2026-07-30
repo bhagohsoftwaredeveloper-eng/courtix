@@ -357,6 +357,10 @@ with:
 
 ```ts
 describe("homeFor", () => {
+  // Owners land here too. Owner-ness is not a platform role and never changes
+  // the landing route — the sidebar's portal switcher is how they reach /owner.
+  // That there is no owner destination is guaranteed by PlatformRole itself:
+  // homeFor("OWNER") no longer compiles, so no runtime case can assert it.
   it("lands players on the player dashboard", () => {
     expect(homeFor("PLAYER")).toBe("/account");
   });
@@ -365,15 +369,10 @@ describe("homeFor", () => {
     expect(homeFor("ADMIN")).toBe("/admin");
     expect(homeFor("SUPER_ADMIN")).toBe("/admin");
   });
-
-  // Owners land on /account like every other player. Owner-ness is not a
-  // platform role and never changes the landing route — the portal switcher
-  // in the sidebar is how they reach /owner.
-  it("has no owner destination", () => {
-    expect(homeFor("PLAYER")).toBe("/account");
-  });
 });
 ```
+
+Note there is deliberately **no** third case asserting the absence of an owner destination. Such a case could only call `homeFor("PLAYER")` again — a byte-identical duplicate of the first — because `homeFor("OWNER")` does not typecheck. The comment carries that guarantee instead.
 
 - [ ] **Step 10: Run the test to verify it fails**
 
