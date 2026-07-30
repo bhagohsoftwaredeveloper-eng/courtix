@@ -24,6 +24,7 @@ export function DashSidebar({
   role,
   subtitle,
   sections,
+  portals,
   user,
 }: {
   /** Short badge text: "Player", "Owner", "Super Admin". */
@@ -31,6 +32,9 @@ export function DashSidebar({
   /** Secondary line under the badge — the owner's organization. */
   subtitle?: string;
   sections: NavSection[];
+  /** Other portals this account can reach, from portalsFor(). Omitted or empty
+   *  renders nothing. */
+  portals?: NavItem[];
   user: { name: string; email: string };
 }) {
   const pathname = usePathname();
@@ -73,6 +77,30 @@ export function DashSidebar({
           </div>
         </div>
       ))}
+      {portals && portals.length > 0 && (
+        <div>
+          <p className="mb-2 px-3 font-mono text-[10.5px] uppercase tracking-[0.08em] text-muted">
+            Switch portal
+          </p>
+          <div className="flex flex-col gap-0.5">
+            {portals.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                // Never active: a switcher entry always points at a portal
+                // other than the one being rendered.
+                className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[13.5px] font-semibold text-muted transition-colors hover:text-line-white"
+              >
+                <span className="w-4 text-center" aria-hidden>
+                  {item.icon}
+                </span>
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </nav>
   );
 

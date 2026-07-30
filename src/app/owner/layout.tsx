@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DashSidebar, type NavSection } from "@/components/dashboard/DashSidebar";
+import { portalsFor } from "@/lib/auth-routes";
 import { requireOwner } from "@/lib/server/auth";
 
 export const metadata: Metadata = {
@@ -32,6 +33,7 @@ export default async function OwnerLayout({ children }: { children: React.ReactN
         role="Owner"
         subtitle={org.name}
         sections={NAV}
+        portals={portalsFor({ role: user.role, isOwner: user.isOwner, current: "owner" })}
         user={{ name: user.name, email: user.email }}
       />
       <div className="min-w-0 flex-1 px-5 py-7 lg:px-8 lg:py-7">{children}</div>

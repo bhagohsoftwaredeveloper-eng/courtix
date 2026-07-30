@@ -16,7 +16,7 @@ const LINKS = [
 export function SiteNav({
   account,
 }: {
-  account: { name: string; email: string; href: string } | null;
+  account: { name: string; email: string; href: string; isOwner: boolean } | null;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);

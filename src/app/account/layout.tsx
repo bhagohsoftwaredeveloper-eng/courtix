@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { DashSidebar, type NavSection } from "@/components/dashboard/DashSidebar";
+import { portalsFor } from "@/lib/auth-routes";
 import { requireUser } from "@/lib/server/auth";
 
 export const metadata: Metadata = {
@@ -43,7 +44,12 @@ export default async function AccountLayout({ children }: { children: React.Reac
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      <DashSidebar role="Player" sections={NAV} user={{ name: user.name, email: user.email }} />
+      <DashSidebar
+        role="Player"
+        sections={NAV}
+        portals={portalsFor({ role: user.role, isOwner: user.isOwner, current: "player" })}
+        user={{ name: user.name, email: user.email }}
+      />
       <div className="min-w-0 flex-1 px-5 py-7 lg:px-8 lg:py-7">{children}</div>
     </div>
   );
