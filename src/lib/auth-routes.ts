@@ -5,24 +5,19 @@
  * anything both of those need has to live here rather than in
  * `src/lib/server/auth.ts`.
  */
-import type { UserRole } from "@prisma/client";
+import type { PlatformRole } from "@prisma/client";
 
 /** Holds the opaque session token. Read by middleware and by getSession(). */
 export const SESSION_COOKIE = "courtix_session";
 
 /** Where a role lands after logging in, and where it gets sent when it opens
  *  someone else's dashboard. */
-export function homeFor(role: UserRole): string {
-  switch (role) {
-    case "OWNER":
-      return "/owner";
-    case "ADMIN":
-    case "SUPER_ADMIN":
-      return "/admin";
-    case "PLAYER":
-    default:
-      return "/account";
-  }
+export function homeFor(role: PlatformRole): string {
+  // Owners are not a case here. Every account is a player, so an owner lands on
+  // /account and switches portals from the sidebar. That keeps this function
+  // pure — deciding it here would need a membership lookup, and middleware
+  // cannot reach the database.
+  return role === "PLAYER" ? "/account" : "/admin";
 }
 
 /**

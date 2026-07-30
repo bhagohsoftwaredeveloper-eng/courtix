@@ -28,11 +28,19 @@ datasource db {
 // ENUMS
 // ============================================================================
 
-enum UserRole {
+// Who this account is on the platform. Owner is deliberately absent: it is a
+// capability granted by an OrganizationMember row, not a kind of account. A
+// court host who also plays is one PLAYER user with a membership.
+enum PlatformRole {
   PLAYER
-  OWNER
   ADMIN
   SUPER_ADMIN
+}
+
+// What this account is inside one organization.
+enum OrgRole {
+  OWNER
+  STAFF
 }
 
 enum SkillLevel {
@@ -191,7 +199,7 @@ model User {
   image         String?
   // Nullable: OAuth accounts and pre-auth seed rows have no password.
   passwordHash  String?
-  role          UserRole  @default(PLAYER)
+  role          PlatformRole @default(PLAYER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -315,7 +323,7 @@ model OrganizationMember {
   id     String   @id @default(cuid())
   orgId  String
   userId String
-  role   UserRole @default(OWNER) // OWNER or staff (ADMIN within the org)
+  role   OrgRole  @default(OWNER)
   org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 

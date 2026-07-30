@@ -9,11 +9,20 @@ describe("SESSION_COOKIE", () => {
 });
 
 describe("homeFor", () => {
-  it("sends each role to its own dashboard", () => {
+  it("lands players on the player dashboard", () => {
     expect(homeFor("PLAYER")).toBe("/account");
-    expect(homeFor("OWNER")).toBe("/owner");
+  });
+
+  it("lands platform staff on the admin dashboard", () => {
     expect(homeFor("ADMIN")).toBe("/admin");
     expect(homeFor("SUPER_ADMIN")).toBe("/admin");
+  });
+
+  // Owners land on /account like every other player. Owner-ness is not a
+  // platform role and never changes the landing route — the portal switcher
+  // in the sidebar is how they reach /owner.
+  it("has no owner destination", () => {
+    expect(homeFor("PLAYER")).toBe("/account");
   });
 });
 
