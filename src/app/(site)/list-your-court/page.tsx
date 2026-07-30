@@ -32,11 +32,11 @@ export default function ListYourCourtPage() {
               scheduling, payment, and no-shows so you don’t have to.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link href="#apply" className="btn btn-solid">
-                Apply to list
+              <Link href="/list-your-court/start" className="btn btn-solid">
+                Start hosting now
               </Link>
-              <Link href="/owner" className="btn btn-ghost">
-                Tour the dashboard
+              <Link href="#apply" className="btn btn-ghost">
+                Talk to onboarding
               </Link>
             </div>
           </div>

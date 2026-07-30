@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { SignupInput } from "@/app/(site)/signup/schema";
+import { OrganizationInput } from "@/app/(site)/list-your-court/start/schema";
 
 function parse(over: Partial<Record<string, unknown>> = {}) {
   return SignupInput.safeParse({
@@ -61,5 +62,47 @@ describe("SignupInput", () => {
     const result = parse({ password: "  spaces  " });
     expect(result.success).toBe(true);
     expect(result.data!.password).toBe("  spaces  ");
+  });
+});
+
+describe("OrganizationInput", () => {
+  function parse(over: Partial<Record<string, unknown>> = {}) {
+    return OrganizationInput.safeParse({
+      name: "Kitchen Line Club",
+      contactEmail: "host@kitchenline.ph",
+      contactPhone: "09171234567",
+      ...over,
+    });
+  }
+
+  it("accepts a complete organization", () => {
+    expect(parse().success).toBe(true);
+  });
+
+  it("requires a business name of two characters", () => {
+    expect(parse({ name: " K " }).success).toBe(false);
+    expect(parse({ name: "KL" }).success).toBe(true);
+  });
+
+  it("rejects a business name over 120 characters", () => {
+    expect(parse({ name: "a".repeat(121) }).success).toBe(false);
+  });
+
+  it("normalises the contact email", () => {
+    const result = parse({ contactEmail: "  HOST@Kitchenline.PH " });
+    expect(result.success).toBe(true);
+    expect(result.data!.contactEmail).toBe("host@kitchenline.ph");
+  });
+
+  it("rejects a malformed contact email", () => {
+    expect(parse({ contactEmail: "host" }).success).toBe(false);
+  });
+
+  // Same rule the player profile uses, so one host sees one phone format.
+  it("accepts an 11-digit mobile starting 09, or nothing", () => {
+    expect(parse({ contactPhone: "09171234567" }).success).toBe(true);
+    expect(parse({ contactPhone: "" }).success).toBe(true);
+    expect(parse({ contactPhone: "0917123456" }).success).toBe(false);
+    expect(parse({ contactPhone: "12345678901" }).success).toBe(false);
   });
 });

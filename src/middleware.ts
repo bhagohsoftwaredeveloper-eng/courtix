@@ -20,5 +20,10 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/owner/:path*", "/admin/:path*", "/account/:path*"],
+  matcher: [
+    "/owner/:path*",
+    "/admin/:path*",
+    "/account/:path*",
+    "/list-your-court/start",
+  ],
 };
