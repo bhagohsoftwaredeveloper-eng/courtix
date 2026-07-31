@@ -1224,8 +1224,12 @@ function isUniqueViolation(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
 
-/** Field errors keyed the way the form names its inputs. */
-export function fieldErrors(error: { issues: { path: (string | number)[]; message: string }[] }) {
+/** Field errors keyed the way the form names its inputs.
+ *
+ *  Not exported: every export of a "use server" module must be an async
+ *  function, and Next rejects a sync one at runtime with a 500 that tsc cannot
+ *  catch. Both later steps live in this same file, so they need no export. */
+function fieldErrors(error: { issues: { path: (string | number)[]; message: string }[] }) {
   const errors: Record<string, string> = {};
   for (const issue of error.issues) {
     const key = String(issue.path[0] ?? "form");
