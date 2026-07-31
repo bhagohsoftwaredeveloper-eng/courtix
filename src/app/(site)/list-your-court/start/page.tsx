@@ -3,10 +3,11 @@ import { redirect } from "next/navigation";
 
 import { StepAccount } from "@/app/(site)/list-your-court/start/StepAccount";
 import { StepProfile } from "@/app/(site)/list-your-court/start/StepProfile";
+import { StepVenue } from "@/app/(site)/list-your-court/start/StepVenue";
 import { Stepper } from "@/app/(site)/list-your-court/start/Stepper";
 import { wizardStep } from "@/lib/host-wizard";
 import { getSession } from "@/lib/server/auth";
-import { hostState } from "@/lib/server/host-store";
+import { hostState, referenceData } from "@/lib/server/host-store";
 
 export const metadata: Metadata = {
   title: "Become a host",
@@ -32,6 +33,9 @@ export default async function BecomeHostPage() {
   // Nothing left to do — the courts page is where a finished host works.
   if (step === "done") redirect("/owner/courts");
 
+  // Only step 3 needs the curated lists, so nothing else pays for the query.
+  const reference = step === 3 ? await referenceData() : null;
+
   return (
     <div className="shell flex max-w-[560px] flex-col py-16">
       <p className="eyebrow mb-4">List your court</p>
@@ -44,9 +48,8 @@ export default async function BecomeHostPage() {
 
       {step === 1 && <StepAccount />}
       {step === 2 && <StepProfile />}
-      {/* Step 3 arrives in Task 7. */}
-      {step === 3 && (
-        <p className="panel text-[13px] text-muted">This step is being built.</p>
+      {step === 3 && reference && (
+        <StepVenue cities={reference.cities} sports={reference.sports} />
       )}
     </div>
   );

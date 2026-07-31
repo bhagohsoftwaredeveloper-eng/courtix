@@ -3,10 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 
-import { AccountInput, OrganizationProfileInput } from "@/app/(site)/list-your-court/start/schema";
+import {
+  AccountInput,
+  FacilityInput,
+  OrganizationProfileInput,
+} from "@/app/(site)/list-your-court/start/schema";
+import { validateAvatar } from "@/lib/image-upload";
 import { createSession, requireUser } from "@/lib/server/auth";
 import { db } from "@/lib/server/db";
-import { createOrganizationProfile, hostState } from "@/lib/server/host-store";
+import { createFacility, createOrganizationProfile, hostState } from "@/lib/server/host-store";
 import { hashPassword } from "@/lib/server/password";
 
 export interface StepState {
@@ -104,5 +109,40 @@ export async function profileAction(_prev: StepState, formData: FormData): Promi
 
   // The page re-reads hostState to pick the step, so it must not be stale.
   revalidatePath("/list-your-court/start");
+  return {};
+}
+
+/** Step 3. Creates the venue, its courts, and an optional photograph. */
+export async function venueAction(_prev: StepState, formData: FormData): Promise<StepState> {
+  const user = await requireUser();
+  const state = await hostState(user.id);
+  // No business yet: the venue has nothing to hang from.
+  if (!state.orgId) return { errors: { form: "Finish your business details first." } };
+
+  const raw = Object.fromEntries(
+    ["name", "description", "cityId", "addressText", "primarySportId", "pesos", "opens", "closes", "courtCount"].map(
+      (key) => [key, String(formData.get(key) ?? "")],
+    ),
+  );
+  // A checkbox posts nothing when unticked, which must read as false.
+  const indoor = String(formData.get("indoor") ?? "");
+
+  const parsed = FacilityInput.safeParse({ ...raw, indoor });
+  if (!parsed.success) return { errors: fieldErrors(parsed.error), values: raw };
+
+  // The photo is optional. An empty file input posts a zero-byte File.
+  let photo: { bytes: Buffer; mimeType: string } | null = null;
+  const file = formData.get("photo");
+  if (file instanceof File && file.size > 0) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const check = validateAvatar(bytes);
+    if (!check.ok) return { errors: { photo: check.error }, values: raw };
+    photo = { bytes: Buffer.from(bytes), mimeType: check.mimeType };
+  }
+
+  await createFacility(state.orgId, parsed.data, photo);
+
+  revalidatePath("/list-your-court/start");
+  revalidatePath("/owner/courts");
   return {};
 }
