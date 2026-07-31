@@ -33,8 +33,10 @@ directory alongside the existing catalogue.
 Two consequences drive the design:
 
 - **A `Facility` row would be invisible today.** The public directory reads a
-  TypeScript array, so a created facility would be write-only. The merge in §8
-  is what makes listing meaningful rather than theatre.
+  TypeScript array, so a created facility would be write-only. Pointing the
+  directory at the table (§8) is what makes listing meaningful rather than
+  theatre — and because the table already mirrors the catalogue, that is a
+  deletion of the array rather than a migration into it.
 - **A new host currently sees three courts that are not theirs.** That is a
   live falsehood in the product, and §7 removes it.
 
