@@ -26,6 +26,8 @@ directory alongside the existing catalogue.
 | `/owner/courts` | a demo page: `const OWNED_IDS = [1, 5, 8]` filtered from the static catalogue, identical for every owner, with a dead `+ Add court` button |
 | `/admin/approvals` | a mock reading a static `ADMIN_APPROVALS` array; `FacilityStatus` is referenced nowhere in `src/` |
 | Public `/courts` | reads the static array `COURTS` from `src/lib/data/courts.ts`, not the database |
+| The `Facility` table itself | **already holds the whole catalogue** — all 14 static courts as `APPROVED` rows with identical slugs, each with its description, price, hours, 3 images pointing at the same `/images/sports/*.svg` paths, amenities, court units and sport. The seed writes them. |
+| A review queue to build against | already seeded: `demo-pending-northgate` (`DRAFT`), `demo-pending-riverside` and `demo-pending-smash-lab` (`PENDING_REVIEW`) |
 | Image upload machinery | `validateAvatar`/`sniffImageType` plus a blob-serving route at `/api/avatar/[userId]` |
 
 Two consequences drive the design:
@@ -40,7 +42,7 @@ Two consequences drive the design:
 
 | Question | Decision |
 |---|---|
-| Should a new court appear publicly? | **Yes — merge database facilities into the existing directory**, without migrating the 14 demo listings. |
+| Should a new court appear publicly? | **Yes — the directory reads `APPROVED` facilities from the database, and the static `COURTS` array is retired.** Superseded an earlier "merge" decision: since the table already holds the same 14 slugs, merging would have rendered every court twice. |
 | Live immediately, or reviewed? | **Admin must approve.** The mock approvals page becomes real. |
 | Photos required? | **Optional**, falling back to the existing sport artwork. No document or ID uploads anywhere. |
 | Does step 1 create the account? | **Yes — signup inline**, skipped entirely when already logged in. |
@@ -207,30 +209,37 @@ details so an admin has something to check. Approve sets `APPROVED` and stamps
 `SUSPENDED` is left unused by this design: it exists for taking a live listing
 down, which is a separate action from reviewing a new one.
 
-## 8. Merging into the public directory
+## 8. The public directory reads the database
 
-A pure adapter, not a refactor:
+The `Facility` table already holds all 14 catalogue courts as `APPROVED` rows
+with the same slugs, the same images and the same prices. So there is nothing to
+merge and nothing to migrate: `/courts` simply queries the table, and
+`src/lib/data/courts.ts` is deleted.
+
+**An earlier version of this design merged the two sources.** That is now
+rejected outright: rendering `[...COURTS, ...facilities]` would show every court
+twice, because both sides carry the same 14 slugs. Even a de-duplicating merge
+would leave two sources of truth for one court, where editing either lets them
+disagree silently.
+
+A pure adapter keeps the components untouched:
 
 ```ts
 export function facilityToCourt(facility: FacilityForDirectory): Court;
 ```
 
-It maps a database row into the exact `Court` shape the directory already
-renders, so `CourtDirectory`, its filters and its cards are untouched. `/courts`
-then renders `[...COURTS, ...approved.map(facilityToCourt)]`.
+It maps a facility row into the exact `Court` shape `CourtDirectory`, its
+filters and its cards already render, so no component changes. Being pure, the
+mapping is unit-testable without a database.
 
-Being pure, the whole mapping is unit-testable without a database — and when the
-14 demo courts eventually move to MySQL, this adapter is the seam that survives
-while the static array is deleted.
+**One wrinkle, resolved here.** `Court.id` is a `number`, while a facility has a
+string cuid. `id` serves as a React key and indexes the `slotsLeft` lookup;
+every route already goes through `slug`, which is unique. So `slug` becomes the
+key — `slotsLeft` is keyed by slug and lists key on slug — and `Court.id` is
+dropped, since the static array that needed it is gone.
 
-**One wrinkle, resolved here.** `Court.id` is a `number`, while a Prisma facility
-has a string cuid. `id` is used as a React key and to index the `slotsLeft`
-lookup; every route already goes through `slug`, which is unique on both sides.
-So `slug` becomes the key: `slotsLeft` is keyed by slug, lists key on slug, and
-`Court.id` becomes optional, retained only by the legacy static catalogue.
-
-Only `APPROVED` facilities are merged. A `DRAFT` or `PENDING_REVIEW` facility is
-visible to its host and to admins, and to nobody else.
+Only `APPROVED` facilities are listed. `DRAFT` and `PENDING_REVIEW` are visible
+to the owning host and to admins, and to nobody else.
 
 ## 9. Surfaces
 
@@ -293,11 +302,15 @@ state is not.
    phase ends the falsehood even before anything is public.
 3. **Admin approval** — real `/admin/approvals`, approve and decline with a
    reason.
-4. **Public merge** — `facilityToCourt()`, slug keying, approved facilities in
-   the directory.
+4. **Directory on the database** — `facilityToCourt()`, slug keying, `/courts`
+   querying `APPROVED` facilities, and `src/lib/data/courts.ts` deleted.
 
-Phase 3 must precede phase 4: with approval required, nothing reaches `APPROVED`
-without it, so a merge built first would display nothing.
+**Phase 4 no longer depends on phase 3.** That dependency existed only while the
+directory was a merge fed by newly approved courts; now that the table already
+holds 14 `APPROVED` rows, the directory switch stands alone and could run first.
+Keeping it last is a sequencing preference, not a constraint — it is the phase
+that touches pages players already use, so it benefits from going in once the
+host-facing work is settled.
 
 ## 13. Out of scope
 
@@ -310,6 +323,6 @@ without it, so a merge built first would display nothing.
   the models exist; the wizard sets one primary sport and one opening window.
 - **Multiple photos per facility** — step 3 accepts one, and the remaining
   gallery slots fall back to sport artwork. A full gallery manager is separate.
-- **Migrating the 14 demo courts to MySQL** — the adapter makes it unnecessary
-  for now.
+- **Migrating the 14 demo courts to MySQL** — not needed: the seed already put
+  them there, which is what made §8 a deletion rather than a migration.
 - **`SUSPENDED` listings, payouts, and wallet-paid bookings** — separate work.
