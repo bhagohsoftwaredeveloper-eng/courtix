@@ -43,6 +43,21 @@ enum OrgRole {
   STAFF
 }
 
+// How the host business is registered. Decides which registry number applies:
+// DTI for a sole proprietorship, SEC for the other two.
+enum EntityType {
+  SOLE_PROP
+  PARTNERSHIP
+  CORPORATION
+}
+
+// Where a host's payout goes. Not PaymentMethod — that is money coming in.
+enum PayoutMethod {
+  BANK
+  GCASH
+  MAYA
+}
+
 enum SkillLevel {
   BEGINNER
   INTERMEDIATE
@@ -311,6 +326,40 @@ model Organization {
   // lower rate until foundingRateUntil.
   commissionBps     Int?
   foundingRateUntil DateTime?
+
+  // ---- Host verification. Every field nullable: organizations created before
+  // this feature have none of it, and an admin verifies by checking these
+  // numbers against public registries rather than against uploaded documents.
+  legalName      String?  // registered name, when it differs from the trade name
+  entityType     EntityType?
+  registrationNo String?  // DTI for a sole proprietorship, SEC otherwise
+  permitNo       String?  // Mayor's / business permit number
+  permitCity     String?  // the LGU that issued it
+  tin            String?
+
+  // Business address as free text. City here is deliberately NOT a relation:
+  // the City table is the curated list of places Courtix operates in, and a
+  // business may be registered somewhere Courtix has not launched. The
+  // facility's city is the one that must be a real City row.
+  addressLine    String?
+  barangay       String?
+  addressCity    String?
+  province       String?
+  postalCode     String?
+
+  // The human an admin telephones to verify the business.
+  repName        String?
+  repPosition    String?
+  repMobile      String?
+
+  // Payout destination. payoutBankName and payoutRef already exist above and
+  // are reused: the bank or e-wallet name, and the last four digits. The full
+  // account number is never stored — see the comment on payoutRef.
+  payoutMethod      PayoutMethod?
+  payoutAccountName String?
+
+  // Stamped when an admin has checked the details. Read-only to hosts.
+  verifiedAt     DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -399,6 +448,9 @@ model Facility {
   indoor         Boolean        @default(false)
   status         FacilityStatus @default(DRAFT)
   fastPay        Boolean        @default(true)
+  // Why an admin declined, shown to the host so they can fix and resubmit.
+  // A decline with no reason is a dead end.
+  declineReason  String? @db.Text
   // Denormalised rollups, refreshed from reviews/bookings.
   ratingAvg      Decimal?       @db.Decimal(2, 1)
   reviewCount    Int            @default(0)
@@ -451,6 +503,10 @@ model FacilityImage {
   facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
   url        String @db.Text
   alt        String
+  // Courtix has no CDN. `url` stays for a future one; `data` is what is served
+  // today, through /api/facility-image/[id], mirroring how avatars work.
+  data     Bytes?  @db.LongBlob
+  mimeType String?
   position   Int      @default(0)
 
   @@index([facilityId])
