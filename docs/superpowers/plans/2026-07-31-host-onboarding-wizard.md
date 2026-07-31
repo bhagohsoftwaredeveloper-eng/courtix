@@ -37,6 +37,7 @@
 | `src/lib/host-wizard.ts` | pure: `wizardStep()`, `maskTail()` |
 | `src/app/(site)/list-your-court/start/schema.ts` | `AccountInput`, `OrganizationProfileInput`, `FacilityInput` |
 | `src/app/(site)/list-your-court/start/actions.ts` | one action per step |
+| `src/app/(site)/list-your-court/start/Field.tsx` | the labelled input wrapper all three steps use |
 | `src/app/(site)/list-your-court/start/StepAccount.tsx` | step 1 form |
 | `src/app/(site)/list-your-court/start/StepProfile.tsx` | step 2 form |
 | `src/app/(site)/list-your-court/start/StepVenue.tsx` | step 3 form |
@@ -1089,7 +1090,7 @@ EOF
 ## Task 5: The wizard shell and step 1
 
 **Files:**
-- Create: `src/app/(site)/list-your-court/start/Stepper.tsx`, `StepAccount.tsx`, `actions.ts`
+- Create: `src/app/(site)/list-your-court/start/Field.tsx`, `Stepper.tsx`, `StepAccount.tsx`, `actions.ts`
 - Modify: `src/app/(site)/list-your-court/start/page.tsx`
 - Modify: `src/middleware.ts` — remove `/list-your-court/start` from the matcher
 
@@ -1107,7 +1108,43 @@ Step 1 *is* the signup, so the route can no longer demand a session. In `src/mid
 
 The page still gates every later step server-side, which was always the real check — middleware only ever tested for a cookie.
 
-- [ ] **Step 2: Write the stepper**
+- [ ] **Step 2: Write the shared field wrapper**
+
+All three steps render labelled inputs with an inline error, so it lives in its
+own file rather than inside whichever step happened to need it first.
+
+Create `src/app/(site)/list-your-court/start/Field.tsx`:
+
+```tsx
+/** A labelled input with its validation message.
+ *
+ *  Used by all three wizard steps, so it is its own module: importing it from a
+ *  sibling step would make that step's file a dependency of the others for no
+ *  reason. */
+export function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="mb-4 block">
+      <span className="field-label">{label}</span>
+      {children}
+      {error && (
+        <span role="alert" className="mt-1.5 block text-[11.5px] font-semibold text-[#ff9370]">
+          {error}
+        </span>
+      )}
+    </label>
+  );
+}
+```
+
+- [ ] **Step 3: Write the stepper**
 
 Create `src/app/(site)/list-your-court/start/Stepper.tsx`:
 
@@ -1160,7 +1197,7 @@ export function Stepper({ current }: { current: WizardStep }) {
 }
 ```
 
-- [ ] **Step 3: Write the account action**
+- [ ] **Step 4: Write the account action**
 
 Create `src/app/(site)/list-your-court/start/actions.ts`:
 
@@ -1244,7 +1281,7 @@ export async function accountAction(_prev: StepState, formData: FormData): Promi
 }
 ```
 
-- [ ] **Step 4: Write the step 1 form**
+- [ ] **Step 5: Write the step 1 form**
 
 Create `src/app/(site)/list-your-court/start/StepAccount.tsx`:
 
@@ -1255,28 +1292,7 @@ import { useActionState } from "react";
 import Link from "next/link";
 
 import { accountAction, type StepState } from "@/app/(site)/list-your-court/start/actions";
-
-export function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="mb-4 block">
-      <span className="field-label">{label}</span>
-      {children}
-      {error && (
-        <span role="alert" className="mt-1.5 block text-[11.5px] font-semibold text-[#ff9370]">
-          {error}
-        </span>
-      )}
-    </label>
-  );
-}
+import { Field } from "@/app/(site)/list-your-court/start/Field";
 
 export function StepAccount() {
   const [state, action, pending] = useActionState<StepState, FormData>(accountAction, {});
@@ -1360,7 +1376,7 @@ export function StepAccount() {
 }
 ```
 
-- [ ] **Step 5: Write the page**
+- [ ] **Step 6: Write the page**
 
 Replace `src/app/(site)/list-your-court/start/page.tsx`:
 
@@ -1418,12 +1434,12 @@ export default async function BecomeHostPage() {
 }
 ```
 
-- [ ] **Step 6: Typecheck and run the suite**
+- [ ] **Step 7: Typecheck and run the suite**
 
 Run: `npx tsc --noEmit && npx vitest run`
 Expected: no typecheck output; all tests pass.
 
-- [ ] **Step 7: Verify step 1**
+- [ ] **Step 8: Verify step 1**
 
 Check no dev server is already running, then `npm run dev`.
 
@@ -1433,7 +1449,7 @@ Check no dev server is already running, then `npm run dev`.
 4. Submit with mismatched passwords: the error appears under **Confirm**, and the name and email are still filled in.
 5. Submit with an email that already exists: the inline "An account with that email already exists." appears.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add "src/app/(site)/list-your-court/start" src/middleware.ts
@@ -1515,7 +1531,7 @@ Create `src/app/(site)/list-your-court/start/StepProfile.tsx`:
 import { useActionState } from "react";
 
 import { profileAction, type StepState } from "@/app/(site)/list-your-court/start/actions";
-import { Field } from "@/app/(site)/list-your-court/start/StepAccount";
+import { Field } from "@/app/(site)/list-your-court/start/Field";
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -1834,7 +1850,7 @@ Create `src/app/(site)/list-your-court/start/StepVenue.tsx`:
 import { useActionState } from "react";
 
 import { venueAction, type StepState } from "@/app/(site)/list-your-court/start/actions";
-import { Field } from "@/app/(site)/list-your-court/start/StepAccount";
+import { Field } from "@/app/(site)/list-your-court/start/Field";
 
 export function StepVenue({
   cities,
