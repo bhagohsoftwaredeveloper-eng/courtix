@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 
-import { AccountInput } from "@/app/(site)/list-your-court/start/schema";
-import { createSession } from "@/lib/server/auth";
+import { AccountInput, OrganizationProfileInput } from "@/app/(site)/list-your-court/start/schema";
+import { createSession, requireUser } from "@/lib/server/auth";
 import { db } from "@/lib/server/db";
+import { createOrganizationProfile, hostState } from "@/lib/server/host-store";
 import { hashPassword } from "@/lib/server/password";
 
 export interface StepState {
@@ -72,6 +73,36 @@ export async function accountAction(_prev: StepState, formData: FormData): Promi
 
   await createSession(userId, true);
   // The page reads the session to pick a step, so it must not be served stale.
+  revalidatePath("/list-your-court/start");
+  return {};
+}
+
+/** Step 2. Creates the business and the membership that grants owner access. */
+export async function profileAction(_prev: StepState, formData: FormData): Promise<StepState> {
+  const user = await requireUser();
+
+  // Already a host: this form is not a way to collect organizations.
+  const state = await hostState(user.id);
+  if (state.hasOrganization) {
+    revalidatePath("/list-your-court/start");
+    return {};
+  }
+
+  const raw = Object.fromEntries(
+    [
+      "name", "legalName", "entityType", "registrationNo", "permitNo", "permitCity", "tin",
+      "addressLine", "barangay", "addressCity", "province", "postalCode",
+      "contactEmail", "contactPhone", "repName", "repPosition", "repMobile",
+      "payoutMethod", "payoutBankName", "payoutAccountName", "payoutLast4",
+    ].map((key) => [key, String(formData.get(key) ?? "")]),
+  );
+
+  const parsed = OrganizationProfileInput.safeParse(raw);
+  if (!parsed.success) return { errors: fieldErrors(parsed.error), values: raw };
+
+  await createOrganizationProfile(user.id, parsed.data);
+
+  // The page re-reads hostState to pick the step, so it must not be stale.
   revalidatePath("/list-your-court/start");
   return {};
 }

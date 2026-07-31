@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { StepAccount } from "@/app/(site)/list-your-court/start/StepAccount";
+import { StepProfile } from "@/app/(site)/list-your-court/start/StepProfile";
 import { Stepper } from "@/app/(site)/list-your-court/start/Stepper";
 import { wizardStep } from "@/lib/host-wizard";
 import { getSession } from "@/lib/server/auth";
@@ -42,8 +43,9 @@ export default async function BecomeHostPage() {
       <Stepper current={step} />
 
       {step === 1 && <StepAccount />}
-      {/* Steps 2 and 3 arrive in Tasks 6 and 7. */}
-      {step !== 1 && (
+      {step === 2 && <StepProfile />}
+      {/* Step 3 arrives in Task 7. */}
+      {step === 3 && (
         <p className="panel text-[13px] text-muted">This step is being built.</p>
       )}
     </div>
