@@ -1,104 +1,120 @@
 import Image from "next/image";
 import Link from "next/link";
-import { DashHeader, Panel, StatusChip } from "@/components/dashboard/parts";
-import { openSlotsToday, upcomingDates } from "@/lib/availability";
-import { COURTS } from "@/lib/data/courts";
-import { getSport } from "@/lib/data/sports";
-import { hourShort, peso } from "@/lib/format";
+
+import { DashHeader, StatusChip } from "@/components/dashboard/parts";
+import { hourShort } from "@/lib/format";
+import { requireOwner } from "@/lib/server/auth";
+import { listOwnerFacilities } from "@/lib/server/host-store";
 
 export const metadata = { title: "My courts" };
 
-/** The demo owner account manages the first three listings. */
-const OWNED_IDS = [1, 5, 8];
+export const dynamic = "force-dynamic";
 
-export default function OwnerCourtsPage() {
-  const today = upcomingDates(1)[0];
-  const owned = COURTS.filter((c) => OWNED_IDS.includes(c.id));
+/** What each status means to the host, in their words rather than the enum's.
+ *  Tones are StatusChip's three: "open" reads positive, "pending" neutral,
+ *  "booked" negative. */
+const STATUS_COPY: Record<
+  string,
+  { label: string; note: string; tone: "open" | "booked" | "pending" }
+> = {
+  DRAFT: { label: "Draft", note: "Not submitted yet.", tone: "pending" },
+  PENDING_REVIEW: {
+    label: "In review",
+    note: "A platform admin is checking your details.",
+    tone: "pending",
+  },
+  APPROVED: {
+    label: "Live",
+    note: "Players can find and book this venue.",
+    tone: "open",
+  },
+  DECLINED: {
+    label: "Declined",
+    note: "Fix the note below and submit again.",
+    tone: "booked",
+  },
+  SUSPENDED: {
+    label: "Suspended",
+    note: "Taken off the directory. Contact support.",
+    tone: "booked",
+  },
+};
+
+export default async function OwnerCourtsPage() {
+  const { org } = await requireOwner();
+  const facilities = await listOwnerFacilities(org.id);
 
   return (
     <>
       <DashHeader
         title="My courts"
-        sub={`${owned.length} listings across ${new Set(owned.map((c) => c.city)).size} cities`}
-        action={<button className="btn btn-solid">+ Add court</button>}
+        sub={
+          facilities.length === 0
+            ? "No venues yet"
+            : `${facilities.length} venue${facilities.length === 1 ? "" : "s"} at ${org.name}`
+        }
+        action={
+          <Link href="/list-your-court/start" className="btn btn-solid">
+            + Add court
+          </Link>
+        }
       />
 
-      <div className="grid gap-[18px] lg:grid-cols-2">
-        {owned.map((court) => {
-          const sport = getSport(court.sport)!;
-          const open = openSlotsToday(court, today);
-          return (
-            <div key={court.id} className="panel">
-              <div className="mb-4 flex gap-4">
-                <div className="relative h-[86px] w-[120px] flex-none overflow-hidden rounded-[10px]">
-                  <Image
-                    src={court.images[0].src}
-                    alt=""
-                    fill
-                    sizes="120px"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <h2 className="truncate font-sans text-[15px] font-extrabold normal-case tracking-normal">
-                    {court.name}
-                  </h2>
-                  <p className="mt-0.5 text-[11.5px] text-muted">{court.loc}</p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    <StatusChip tone={open > 0 ? "open" : "booked"}>
-                      {open > 0 ? `${open} open today` : "Fully booked"}
-                    </StatusChip>
-                    <StatusChip tone="pending">{sport.name}</StatusChip>
+      {facilities.length === 0 ? (
+        <div className="rounded-[16px] border border-line-white/10 bg-card px-6 py-16 text-center">
+          <p className="mb-1.5 font-sans text-[16px] font-extrabold normal-case tracking-normal">
+            No venues yet
+          </p>
+          <p className="mx-auto mb-6 max-w-[380px] text-[13px] leading-relaxed text-muted">
+            Add your first venue and we&apos;ll review it. Once approved it appears in the
+            Courtix directory and players can book it.
+          </p>
+          <Link href="/list-your-court/start" className="btn btn-solid">
+            Add your first court
+          </Link>
+        </div>
+      ) : (
+        <div className="grid gap-[18px] lg:grid-cols-2">
+          {facilities.map((f) => {
+            const copy = STATUS_COPY[f.status] ?? { label: f.status, note: "", tone: "pending" as const };
+            return (
+              <section key={f.id} className="panel">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="truncate font-sans text-[15px] font-extrabold normal-case tracking-normal">
+                      {f.name}
+                    </h2>
+                    <p className="mt-0.5 text-[12px] text-muted">
+                      {f.cityName} · {f.courtCount} court{f.courtCount === 1 ? "" : "s"} ·{" "}
+                      {hourShort(f.opens)}–{hourShort(f.closes)}
+                    </p>
                   </div>
+                  <StatusChip tone={copy.tone}>{copy.label}</StatusChip>
                 </div>
-              </div>
 
-              <dl className="grid grid-cols-3 gap-3 border-t border-line-white/8 pt-4 text-[12px]">
-                <div>
-                  <dt className="mb-1 text-[10.5px] uppercase tracking-[0.05em] text-muted">Rate</dt>
-                  <dd className="font-mono">{peso(court.price)}/hr</dd>
-                </div>
-                <div>
-                  <dt className="mb-1 text-[10.5px] uppercase tracking-[0.05em] text-muted">
-                    {sport.unitLabelPlural}
-                  </dt>
-                  <dd className="font-mono">{court.units}</dd>
-                </div>
-                <div>
-                  <dt className="mb-1 text-[10.5px] uppercase tracking-[0.05em] text-muted">Hours</dt>
-                  <dd className="font-mono">
-                    {hourShort(court.opens)}–{hourShort(court.closes)}
-                  </dd>
-                </div>
-              </dl>
+                {f.imageId && (
+                  <Image
+                    src={`/api/facility-image/${f.imageId}`}
+                    alt={`${f.name} — venue photo`}
+                    width={640}
+                    height={360}
+                    unoptimized
+                    className="mb-3 h-[150px] w-full rounded-[10px] object-cover"
+                  />
+                )}
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Link href={`/courts/${court.slug}`} className="btn btn-ghost px-4 py-2 text-[12px]">
-                  View listing
-                </Link>
-                <button className="btn btn-ghost px-4 py-2 text-[12px]">Edit</button>
-                <button className="btn btn-ghost px-4 py-2 text-[12px]">Block hours</button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+                <p className="text-[12.5px] text-muted">{copy.note}</p>
 
-      <Panel title="Listing health" className="mt-[18px]">
-        <ul className="flex flex-col gap-3 text-[13px]">
-          {[
-            { ok: true, t: "All listings have at least 3 photos" },
-            { ok: true, t: "Opening hours set for every court" },
-            { ok: false, t: "Third Shot Park has no cancellation policy set" },
-            { ok: false, t: "Sunrise Courts hasn't replied to 2 player messages" },
-          ].map((i) => (
-            <li key={i.t} className="flex gap-3">
-              <span className={i.ok ? "text-ball-yellow" : "text-[#ff9370]"}>{i.ok ? "✓" : "!"}</span>
-              <span className={i.ok ? "text-muted" : ""}>{i.t}</span>
-            </li>
-          ))}
-        </ul>
-      </Panel>
+                {f.status === "DECLINED" && f.declineReason && (
+                  <p className="mt-2.5 rounded-[10px] border border-[#ff9370]/40 bg-[#ff9370]/10 px-3.5 py-3 text-[12.5px] text-[#ff9370]">
+                    {f.declineReason}
+                  </p>
+                )}
+              </section>
+            );
+          })}
+        </div>
+      )}
     </>
   );
 }
