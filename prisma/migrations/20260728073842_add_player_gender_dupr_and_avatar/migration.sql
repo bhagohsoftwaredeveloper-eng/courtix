@@ -1,5 +1,5 @@
 -- AlterTable
-ALTER TABLE `playerprofile` ADD COLUMN `duprId` VARCHAR(191) NULL,
+ALTER TABLE `PlayerProfile` ADD COLUMN `duprId` VARCHAR(191) NULL,
     ADD COLUMN `gender` ENUM('MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY') NULL;
 
 -- CreateTable
