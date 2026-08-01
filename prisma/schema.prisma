@@ -28,17 +28,48 @@ datasource db {
 // ENUMS
 // ============================================================================
 
-enum UserRole {
+// Who this account is on the platform. Owner is deliberately absent: it is a
+// capability granted by an OrganizationMember row, not a kind of account. A
+// court host who also plays is one PLAYER user with a membership.
+enum PlatformRole {
   PLAYER
-  OWNER
   ADMIN
   SUPER_ADMIN
+}
+
+// What this account is inside one organization.
+enum OrgRole {
+  OWNER
+  STAFF
+}
+
+// How the host business is registered. Decides which registry number applies:
+// DTI for a sole proprietorship, SEC for the other two.
+enum EntityType {
+  SOLE_PROP
+  PARTNERSHIP
+  CORPORATION
+}
+
+// Where a host's payout goes. Not PaymentMethod — that is money coming in.
+enum PayoutMethod {
+  BANK
+  GCASH
+  MAYA
 }
 
 enum SkillLevel {
   BEGINNER
   INTERMEDIATE
   ADVANCED
+}
+
+// Self-declared and always optional — the profile form offers a way to decline.
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
 }
 
 enum OpenPlaySkill {
@@ -183,7 +214,7 @@ model User {
   image         String?
   // Nullable: OAuth accounts and pre-auth seed rows have no password.
   passwordHash  String?
-  role          UserRole  @default(PLAYER)
+  role          PlatformRole @default(PLAYER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -193,6 +224,7 @@ model User {
 
   // Profiles
   playerProfile PlayerProfile?
+  avatar        UserAvatar?
   memberships   OrganizationMember[]
 
   // Activity
@@ -254,12 +286,30 @@ model PlayerProfile {
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   skill       SkillLevel  @default(BEGINNER)
   rating      Decimal?    @db.Decimal(3, 2) // DUPR-style, e.g. 3.50
+  // The player's DUPR account number, typed in by hand. Nothing verifies it
+  // against DUPR yet — there is no partner API wired up.
+  duprId      String?
+  gender      Gender?
   homeCityId  String?
   homeCity    City?       @relation(fields: [homeCityId], references: [id])
   memberSince DateTime    @default(now())
   favourites  PlayerSport[]
 
   @@index([homeCityId])
+}
+
+/// An uploaded profile photo, stored as bytes rather than on a CDN.
+///
+/// Deliberately its own table: `getSession()` selects from `User` on every
+/// single request, and a column holding megabytes of image would be dragged
+/// along with it. Nothing joins to this — the avatar route loads it by id and
+/// serves it directly.
+model UserAvatar {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  data      Bytes    @db.LongBlob
+  mimeType  String
+  updatedAt DateTime @updatedAt
 }
 
 // A host business. One org can own many facilities and have several members.
@@ -276,6 +326,40 @@ model Organization {
   // lower rate until foundingRateUntil.
   commissionBps     Int?
   foundingRateUntil DateTime?
+
+  // ---- Host verification. Every field nullable: organizations created before
+  // this feature have none of it, and an admin verifies by checking these
+  // numbers against public registries rather than against uploaded documents.
+  legalName      String?  // registered name, when it differs from the trade name
+  entityType     EntityType?
+  registrationNo String?  // DTI for a sole proprietorship, SEC otherwise
+  permitNo       String?  // Mayor's / business permit number
+  permitCity     String?  // the LGU that issued it
+  tin            String?
+
+  // Business address as free text. City here is deliberately NOT a relation:
+  // the City table is the curated list of places Courtix operates in, and a
+  // business may be registered somewhere Courtix has not launched. The
+  // facility's city is the one that must be a real City row.
+  addressLine    String?
+  barangay       String?
+  addressCity    String?
+  province       String?
+  postalCode     String?
+
+  // The human an admin telephones to verify the business.
+  repName        String?
+  repPosition    String?
+  repMobile      String?
+
+  // Payout destination. payoutBankName and payoutRef already exist above and
+  // are reused: the bank or e-wallet name, and the last four digits. The full
+  // account number is never stored — see the comment on payoutRef.
+  payoutMethod      PayoutMethod?
+  payoutAccountName String?
+
+  // Stamped when an admin has checked the details. Read-only to hosts.
+  verifiedAt     DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -288,7 +372,7 @@ model OrganizationMember {
   id     String   @id @default(cuid())
   orgId  String
   userId String
-  role   UserRole @default(OWNER) // OWNER or staff (ADMIN within the org)
+  role   OrgRole  @default(OWNER)
   org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -364,6 +448,9 @@ model Facility {
   indoor         Boolean        @default(false)
   status         FacilityStatus @default(DRAFT)
   fastPay        Boolean        @default(true)
+  // Why an admin declined, shown to the host so they can fix and resubmit.
+  // A decline with no reason is a dead end.
+  declineReason  String? @db.Text
   // Denormalised rollups, refreshed from reviews/bookings.
   ratingAvg      Decimal?       @db.Decimal(2, 1)
   reviewCount    Int            @default(0)
@@ -416,6 +503,10 @@ model FacilityImage {
   facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
   url        String @db.Text
   alt        String
+  // Courtix has no CDN. `url` stays for a future one; `data` is what is served
+  // today, through /api/facility-image/[id], mirroring how avatars work.
+  data     Bytes?  @db.LongBlob
+  mimeType String?
   position   Int      @default(0)
 
   @@index([facilityId])
@@ -752,8 +843,11 @@ model Dispute {
   id             String        @id @default(cuid())
   bookingId      String?
   booking        Booking?      @relation(fields: [bookingId], references: [id])
-  facilityId     String
-  facility       Facility      @relation(fields: [facilityId], references: [id])
+  // Nullable so the support queue can hold reports that are about the platform
+  // rather than a venue — "the app won't load" has no facility to point at.
+  // A dispute raised from a booking still carries that booking's facility.
+  facilityId     String?
+  facility       Facility?     @relation(fields: [facilityId], references: [id])
   raisedById     String
   raisedBy       User          @relation("DisputeRaisedBy", fields: [raisedById], references: [id])
   type           DisputeType

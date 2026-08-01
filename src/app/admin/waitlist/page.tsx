@@ -29,7 +29,11 @@ export default async function AdminWaitlistPage() {
       <DashHeader
         title="Waitlist"
         sub="Live signups from the CTA form — this is real stored data, not a mock"
-        action={<button className="btn btn-ghost">Export CSV</button>}
+        action={
+          <a className="btn btn-ghost" href="/admin/waitlist/export">
+            Export CSV
+          </a>
+        }
       />
 
       <KpiRow
@@ -97,7 +101,17 @@ export default async function AdminWaitlistPage() {
               {entries.map((e) => (
                 <tr key={e.id}>
                   <Td mono>{e.position}</Td>
-                  <Td>{e.name}</Td>
+                  <Td>
+                    {e.name}
+                    {e.notes && (
+                      <span
+                        className="mt-0.5 line-clamp-2 block max-w-[260px] text-[10.5px] leading-snug text-muted"
+                        title={e.notes}
+                      >
+                        {e.notes}
+                      </span>
+                    )}
+                  </Td>
                   <Td>
                     {e.email}
                     {e.phone && <span className="block text-[10.5px] text-muted">{e.phone}</span>}

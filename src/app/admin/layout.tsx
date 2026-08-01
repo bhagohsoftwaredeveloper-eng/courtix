@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DashSidebar, type NavSection } from "@/components/dashboard/DashSidebar";
-import { requireRole } from "@/lib/server/auth";
+import { portalsFor } from "@/lib/auth-routes";
+import { requirePlatformRole } from "@/lib/server/auth";
 
 export const metadata: Metadata = {
   title: { default: "Platform admin", template: "%s · Courtix Admin" },
@@ -23,7 +24,7 @@ const NAV: NavSection[] = [
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const user = await requireRole("ADMIN", "SUPER_ADMIN");
+  const user = await requirePlatformRole("ADMIN", "SUPER_ADMIN");
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
@@ -31,6 +32,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         role="Super Admin"
         subtitle="Platform"
         sections={NAV}
+        portals={portalsFor({ role: user.role, isOwner: user.isOwner, current: "admin" })}
         user={{ name: user.name, email: user.email }}
       />
       <div className="min-w-0 flex-1 px-5 py-7 lg:px-8 lg:py-7">{children}</div>

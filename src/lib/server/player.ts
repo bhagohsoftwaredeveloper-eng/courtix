@@ -69,7 +69,16 @@ export interface ProfileFormValues {
   homeCityId: string;
   skill: "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
   rating: string;
+  duprId: string;
+  /** "" means the player hasn't said, which is a valid answer. */
+  gender: "" | "MALE" | "FEMALE" | "OTHER" | "PREFER_NOT_TO_SAY";
   sportIds: string[];
+  /**
+   * Ready-to-use src for the avatar route, or null when no photo was uploaded.
+   * Carries an `updatedAt` cache-buster so a new upload is never masked by the
+   * immutable cache header the route sets.
+   */
+  avatarSrc: string | null;
 }
 
 export async function getProfileForm(): Promise<ProfileFormValues | null> {
@@ -82,10 +91,15 @@ export async function getProfileForm(): Promise<ProfileFormValues | null> {
       name: true,
       email: true,
       phone: true,
+      // `updatedAt` only — selecting `data` here would pull the whole image
+      // into a query that just needs to know whether one exists.
+      avatar: { select: { updatedAt: true } },
       playerProfile: {
         select: {
           skill: true,
           rating: true,
+          duprId: true,
+          gender: true,
           homeCityId: true,
           favourites: { select: { sportId: true } },
         },
@@ -102,6 +116,11 @@ export async function getProfileForm(): Promise<ProfileFormValues | null> {
     homeCityId: p?.homeCityId ?? "",
     skill: p?.skill ?? "BEGINNER",
     rating: p?.rating ? String(p.rating) : "",
+    duprId: p?.duprId ?? "",
+    gender: p?.gender ?? "",
     sportIds: p?.favourites.map((f) => f.sportId) ?? [],
+    avatarSrc: user.avatar
+      ? `/api/avatar/${session.id}?v=${user.avatar.updatedAt.getTime()}`
+      : null,
   };
 }

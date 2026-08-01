@@ -22,13 +22,29 @@ const COLUMNS = [
       { href: "/app", label: "Mobile app" },
     ],
   },
+  {
+    title: "Support",
+    links: [
+      { href: "/help", label: "Help" },
+      { href: "/report-issue", label: "Report an issue" },
+      { href: "/contact", label: "Contact us" },
+    ],
+  },
+];
+
+/** Kept on their own row: legal links belong beside the copyright, not in the
+ *  navigational columns above. */
+const LEGAL_LINKS = [
+  { href: "/privacy", label: "Privacy policy" },
+  { href: "/terms", label: "Terms & conditions" },
+  { href: "/cookies", label: "Cookie policy" },
 ];
 
 export function SiteFooter() {
   return (
     <footer className="mt-24 border-t border-line-white/8 pt-14 pb-10">
       <div className="shell">
-        <div className="grid gap-10 pb-12 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        <div className="grid gap-10 pb-12 sm:grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]">
           <div>
             <Wordmark height={22} />
             <p className="mt-4 max-w-[280px] text-[13px] leading-relaxed text-muted">
@@ -74,7 +90,19 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-white/8 pt-7">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line-white/8 pt-7">
+          {LEGAL_LINKS.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="text-[12.5px] text-muted transition-colors hover:text-line-white"
+            >
+              {l.label}
+            </Link>
+          ))}
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
           <p className="text-[12.5px] text-muted">
             © 2026 Courtix. Every court, one booking.
           </p>

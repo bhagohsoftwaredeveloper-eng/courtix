@@ -11,7 +11,14 @@ export default async function NotFound() {
     <>
       <SiteNav
         account={
-          user ? { name: user.name, email: user.email, href: homeFor(user.role) } : null
+          user
+            ? {
+                name: user.name,
+                email: user.email,
+                href: homeFor(user.role),
+                isOwner: user.isOwner,
+              }
+            : null
         }
       />
       <main className="shell flex flex-col items-center py-28 text-center">

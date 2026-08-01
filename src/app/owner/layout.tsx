@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { DashSidebar, type NavSection } from "@/components/dashboard/DashSidebar";
-import { requireRole } from "@/lib/server/auth";
-import { db } from "@/lib/server/db";
+import { portalsFor } from "@/lib/auth-routes";
+import { requireOwner } from "@/lib/server/auth";
 
 export const metadata: Metadata = {
   title: { default: "Owner dashboard", template: "%s · Courtix Owner" },
@@ -23,23 +23,17 @@ const NAV: NavSection[] = [
 ];
 
 export default async function OwnerLayout({ children }: { children: React.ReactNode }) {
-  const user = await requireRole("OWNER");
-
-  // The sidebar names the facility this owner actually manages.
-  const membership = await db.organizationMember.findFirst({
-    where: { userId: user.id },
-    // An owner can belong to several orgs; order so the sidebar name is stable
-    // between requests. Choosing among them properly is a later-phase concern.
-    orderBy: { orgId: "asc" },
-    select: { org: { select: { name: true } } },
-  });
+  // requireOwner() is the gate and the lookup: it rejects non-owners and hands
+  // back the organization the sidebar names.
+  const { user, org } = await requireOwner();
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
       <DashSidebar
         role="Owner"
-        subtitle={membership?.org.name ?? "No facility yet"}
+        subtitle={org.name}
         sections={NAV}
+        portals={portalsFor({ role: user.role, isOwner: user.isOwner, current: "owner" })}
         user={{ name: user.name, email: user.email }}
       />
       <div className="min-w-0 flex-1 px-5 py-7 lg:px-8 lg:py-7">{children}</div>
