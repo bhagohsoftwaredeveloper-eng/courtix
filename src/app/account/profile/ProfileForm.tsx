@@ -1,9 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 
 import { saveProfileAction, type ProfileState } from "@/app/account/profile/actions";
 import type { ProfileFormValues } from "@/lib/server/player";
+
+const GENDERS = [
+  { value: "MALE", label: "Male" },
+  { value: "FEMALE", label: "Female" },
+  { value: "OTHER", label: "Other" },
+  { value: "PREFER_NOT_TO_SAY", label: "Prefer not to say" },
+];
 
 export function ProfileForm({
   values,
@@ -18,63 +26,101 @@ export function ProfileForm({
   const err = (field: string) => state.errors?.[field];
 
   return (
-    <form action={action} className="panel max-w-[560px]">
+    <form action={action} className="panel">
+      <h2 className="mb-5 font-sans text-sm font-extrabold normal-case tracking-normal">
+        Profile details
+      </h2>
+
       {state.saved && (
-        <p role="status" className="mb-4 rounded-[10px] border border-court-green bg-court-green/20 px-3.5 py-3 text-[12.5px] font-semibold text-ball-yellow">
+        <p
+          role="status"
+          className="mb-4 rounded-[10px] border border-court-green bg-court-green/20 px-3.5 py-3 text-[12.5px] font-semibold text-ball-yellow"
+        >
           Profile saved.
         </p>
       )}
 
-      <label className="mb-4 block">
-        <span className="field-label">Name</span>
-        <input name="name" defaultValue={values.name} required className="field" autoComplete="name" />
-        {err("name") && <span className="mt-1 block text-[11.5px] text-[#ff9370]">{err("name")}</span>}
-      </label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Email" hint="Your email is how you sign in — it can't be changed here.">
+          <input value={values.email} readOnly disabled className="field opacity-60" />
+        </Field>
 
-      <label className="mb-4 block">
-        <span className="field-label">Email</span>
-        <input value={values.email} readOnly disabled className="field opacity-60" />
-        <span className="mt-1 block text-[11.5px] text-muted">
-          Your email is how you sign in — it can&apos;t be changed here.
-        </span>
-      </label>
+        <Field label="Full name" required error={err("name")}>
+          <input
+            name="name"
+            defaultValue={values.name}
+            required
+            className="field"
+            autoComplete="name"
+          />
+        </Field>
 
-      <label className="mb-4 block">
-        <span className="field-label">Mobile</span>
-        <input name="phone" defaultValue={values.phone} className="field" placeholder="09171234567" autoComplete="tel" />
-        {err("phone") && <span className="mt-1 block text-[11.5px] text-[#ff9370]">{err("phone")}</span>}
-      </label>
+        <Field label="Mobile number" error={err("phone")}>
+          <input
+            name="phone"
+            defaultValue={values.phone}
+            className="field"
+            placeholder="09171234567"
+            autoComplete="tel"
+          />
+        </Field>
 
-      <label className="mb-4 block">
-        <span className="field-label">Home city</span>
-        <select name="homeCityId" defaultValue={values.homeCityId} className="field">
-          <option value="">No home city</option>
-          {cities.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}, {c.province}
-            </option>
-          ))}
-        </select>
-        {err("homeCityId") && <span className="mt-1 block text-[11.5px] text-[#ff9370]">{err("homeCityId")}</span>}
-      </label>
+        <Field label="Gender" error={err("gender")}>
+          <select name="gender" defaultValue={values.gender} className="field">
+            <option value="">Select gender</option>
+            {GENDERS.map((g) => (
+              <option key={g.value} value={g.value}>
+                {g.label}
+              </option>
+            ))}
+          </select>
+        </Field>
 
-      <label className="mb-4 block">
-        <span className="field-label">Skill level</span>
-        <select name="skill" defaultValue={values.skill} className="field">
-          <option value="BEGINNER">Beginner</option>
-          <option value="INTERMEDIATE">Intermediate</option>
-          <option value="ADVANCED">Advanced</option>
-        </select>
-      </label>
+        <Field label="Home city" error={err("homeCityId")}>
+          <select name="homeCityId" defaultValue={values.homeCityId} className="field">
+            <option value="">No home city</option>
+            {cities.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}, {c.province}
+              </option>
+            ))}
+          </select>
+        </Field>
 
-      <label className="mb-4 block">
-        <span className="field-label">DUPR rating</span>
-        <input name="rating" defaultValue={values.rating} className="field" placeholder="3.50" inputMode="decimal" />
-        <span className="mt-1 block text-[11.5px] text-muted">Self-reported, 1.00–8.00. Leave blank if unrated.</span>
-        {err("rating") && <span className="mt-1 block text-[11.5px] text-[#ff9370]">{err("rating")}</span>}
-      </label>
+        <Field label="Skill level">
+          <select name="skill" defaultValue={values.skill} className="field">
+            <option value="BEGINNER">Beginner</option>
+            <option value="INTERMEDIATE">Intermediate</option>
+            <option value="ADVANCED">Advanced</option>
+          </select>
+        </Field>
 
-      <fieldset className="mb-5">
+        <Field
+          label="DUPR rating"
+          hint="1.00–8.00. Helps with matching. Leave blank if unrated."
+          error={err("rating")}
+        >
+          <input
+            name="rating"
+            defaultValue={values.rating}
+            className="field"
+            placeholder="e.g. 3.50"
+            inputMode="decimal"
+          />
+        </Field>
+
+        <Field label="DUPR ID" hint="Your DUPR account ID (optional)." error={err("duprId")}>
+          <input
+            name="duprId"
+            defaultValue={values.duprId}
+            className="field"
+            placeholder="e.g. 12345678"
+            inputMode="numeric"
+          />
+        </Field>
+      </div>
+
+      <fieldset className="mt-5">
         <legend className="field-label">Favourite sports</legend>
         <div className="mt-1 flex flex-wrap gap-3">
           {sports.map((s) => (
@@ -90,12 +136,49 @@ export function ProfileForm({
             </label>
           ))}
         </div>
-        {err("sportIds") && <span className="mt-1 block text-[11.5px] text-[#ff9370]">{err("sportIds")}</span>}
+        {err("sportIds") && (
+          <span className="mt-1 block text-[11.5px] text-[#ff9370]">{err("sportIds")}</span>
+        )}
       </fieldset>
 
-      <button type="submit" disabled={pending} className="btn btn-solid w-full py-3 text-sm disabled:opacity-60">
-        {pending ? "Saving…" : "Save changes"}
-      </button>
+      <div className="mt-7 flex flex-col gap-2.5 sm:flex-row sm:justify-end">
+        <Link href="/account" className="btn btn-ghost justify-center py-3 text-sm">
+          Cancel
+        </Link>
+        <button
+          type="submit"
+          disabled={pending}
+          className="btn btn-solid justify-center py-3 text-sm disabled:opacity-60 sm:min-w-[170px]"
+        >
+          {pending ? "Saving…" : "Save changes"}
+        </button>
+      </div>
     </form>
+  );
+}
+
+function Field({
+  label,
+  hint,
+  error,
+  required,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  error?: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="field-label">
+        {label}
+        {required && <span className="text-ball-yellow"> *</span>}
+      </span>
+      {children}
+      {hint && <span className="mt-1 block text-[11.5px] leading-relaxed text-muted">{hint}</span>}
+      {error && <span className="mt-1 block text-[11.5px] text-[#ff9370]">{error}</span>}
+    </label>
   );
 }

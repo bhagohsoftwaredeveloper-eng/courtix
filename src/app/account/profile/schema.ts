@@ -14,6 +14,13 @@ export const ProfileInput = z.object({
     .string()
     .trim()
     .refine((v) => v === "" || (Number(v) >= 1 && Number(v) <= 8), "Rating must be between 1.00 and 8.00"),
+  // Nothing checks this against DUPR — there is no partner API wired up — so
+  // the only rule is that it looks like an account number.
+  duprId: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || /^\d{4,12}$/.test(v), "A DUPR ID is 4–12 digits"),
+  gender: z.enum(["", "MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY"]),
   sportIds: z.array(z.string()),
 });
 

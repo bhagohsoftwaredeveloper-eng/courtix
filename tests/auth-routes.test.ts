@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { SESSION_COOKIE, homeFor, isExpired, safeNext } from "@/lib/auth-routes";
+import { SESSION_COOKIE, homeFor, isExpired, portalsFor, safeNext } from "@/lib/auth-routes";
 
 describe("SESSION_COOKIE", () => {
   it("is the name middleware and the server both look for", () => {
@@ -9,9 +9,15 @@ describe("SESSION_COOKIE", () => {
 });
 
 describe("homeFor", () => {
-  it("sends each role to its own dashboard", () => {
+  // Owners land here too. Owner-ness is not a platform role and never changes
+  // the landing route — the sidebar's portal switcher is how they reach /owner.
+  // That there is no owner destination is guaranteed by PlatformRole itself:
+  // homeFor("OWNER") no longer compiles, so no runtime case can assert it.
+  it("lands players on the player dashboard", () => {
     expect(homeFor("PLAYER")).toBe("/account");
-    expect(homeFor("OWNER")).toBe("/owner");
+  });
+
+  it("lands platform staff on the admin dashboard", () => {
     expect(homeFor("ADMIN")).toBe("/admin");
     expect(homeFor("SUPER_ADMIN")).toBe("/admin");
   });
@@ -58,5 +64,61 @@ describe("isExpired", () => {
 
   it("is true exactly at the expiry instant", () => {
     expect(isExpired(new Date("2026-07-25T12:00:00Z"), now)).toBe(true);
+  });
+});
+
+describe("portalsFor", () => {
+  // The rule is one line: offer every portal the user holds, except the one
+  // they are looking at. Each case below is that rule applied.
+  const hrefs = (opts: Parameters<typeof portalsFor>[0]) =>
+    portalsFor(opts).map((p) => p.href);
+
+  it("offers nothing to a player who only plays", () => {
+    expect(hrefs({ role: "PLAYER", isOwner: false, current: "player" })).toEqual([]);
+  });
+
+  it("offers the owner portal to a player who hosts", () => {
+    expect(hrefs({ role: "PLAYER", isOwner: true, current: "player" })).toEqual(["/owner"]);
+  });
+
+  it("offers the player portal from inside the owner portal", () => {
+    expect(hrefs({ role: "PLAYER", isOwner: true, current: "owner" })).toEqual(["/account"]);
+  });
+
+  it("offers the player portal to admin staff", () => {
+    expect(hrefs({ role: "ADMIN", isOwner: false, current: "admin" })).toEqual(["/account"]);
+    expect(hrefs({ role: "SUPER_ADMIN", isOwner: false, current: "admin" })).toEqual(["/account"]);
+  });
+
+  // Platform staff are ordinary people who may also play and may also host.
+  it("offers both other portals to an admin who hosts", () => {
+    expect(hrefs({ role: "ADMIN", isOwner: true, current: "admin" })).toEqual([
+      "/account",
+      "/owner",
+    ]);
+  });
+
+  it("offers the admin portal to staff standing in another portal", () => {
+    expect(hrefs({ role: "ADMIN", isOwner: false, current: "player" })).toEqual(["/admin"]);
+    expect(hrefs({ role: "ADMIN", isOwner: true, current: "owner" })).toEqual([
+      "/account",
+      "/admin",
+    ]);
+  });
+
+  it("never offers the portal you are already in", () => {
+    for (const current of ["player", "owner", "admin"] as const) {
+      const offered = hrefs({ role: "SUPER_ADMIN", isOwner: true, current });
+      expect(offered).not.toContain(
+        { player: "/account", owner: "/owner", admin: "/admin" }[current],
+      );
+    }
+  });
+
+  it("labels and icons every portal it offers", () => {
+    for (const portal of portalsFor({ role: "ADMIN", isOwner: true, current: "player" })) {
+      expect(portal.label.length).toBeGreaterThan(0);
+      expect(portal.icon.length).toBeGreaterThan(0);
+    }
   });
 });

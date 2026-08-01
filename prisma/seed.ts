@@ -347,15 +347,17 @@ async function main(): Promise<void> {
       select: { id: true, name: true },
     });
 
+    // A dual-role account: a player on the platform who also hosts. Owner
+    // access comes from the OrganizationMember row below, not from this column.
     const owner = await db.user.upsert({
       where: { email: "owner@kitchenline.ph" },
       create: {
         email: "owner@kitchenline.ph",
         name: "Kitchen Line Club",
-        role: "OWNER",
+        role: "PLAYER",
         passwordHash: await demoPassword(),
       },
-      update: { role: "OWNER" },
+      update: { role: "PLAYER" },
     });
 
     if (ownerOrg) {

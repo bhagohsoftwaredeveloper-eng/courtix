@@ -36,8 +36,8 @@ export default async function LoginPage({
 
       <p className="mt-6 text-center text-[13px] text-muted">
         No account yet?{" "}
-        <Link href="/waitlist" className="font-bold text-ball-yellow">
-          Join the waitlist
+        <Link href="/signup" className="font-bold text-ball-yellow">
+          Create one
         </Link>
       </p>
     </div>

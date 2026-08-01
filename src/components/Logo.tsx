@@ -7,10 +7,11 @@ const WORDMARK_W = 5805;
 const WORDMARK_H = 1092;
 
 /**
- * The brand wordmark, for the public header and footer.
+ * The brand wordmark, for the public header and footer and the dashboard rails.
  *
- * The art is white on transparent, so it only reads on the dark surfaces the
- * public site uses. The dashboard rails keep the text `Logo` below.
+ * The art is white on transparent, so it only reads on a dark surface — every
+ * placement so far sits on `bg-court-deep`. The text `Logo` below is the
+ * fallback for anywhere an image would be wrong.
  */
 export function Wordmark({
   height = 24,

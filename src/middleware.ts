@@ -7,8 +7,9 @@ import { SESSION_COOKIE } from "@/lib/auth-routes";
  *
  * Middleware runs on the Edge runtime, where Prisma cannot reach MySQL — so
  * this only checks that a session cookie is present. Anyone can forge that
- * cookie; requireRole() in each protected layout does the real check against
- * the database and rejects them there.
+ * cookie; the gate in each protected layout — requireUser(),
+ * requirePlatformRole() or requireOwner() — does the real check against the
+ * database and rejects them there.
  */
 export function middleware(request: NextRequest) {
   if (request.cookies.has(SESSION_COOKIE)) return NextResponse.next();

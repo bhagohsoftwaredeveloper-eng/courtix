@@ -55,7 +55,7 @@ export function LoginForm({ next }: { next?: string }) {
           />
           Keep me signed in
         </label>
-        <Link href="/waitlist" className="text-[12.5px] font-bold text-ball-yellow">
+        <Link href="/signup" className="text-[12.5px] font-bold text-ball-yellow">
           Need an account?
         </Link>
       </div>

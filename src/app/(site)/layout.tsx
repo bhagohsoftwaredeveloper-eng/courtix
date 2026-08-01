@@ -12,7 +12,14 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
     <>
       <SiteNav
         account={
-          user ? { name: user.name, email: user.email, href: homeFor(user.role) } : null
+          user
+            ? {
+                name: user.name,
+                email: user.email,
+                href: homeFor(user.role),
+                isOwner: user.isOwner,
+              }
+            : null
         }
       />
       <main>{children}</main>

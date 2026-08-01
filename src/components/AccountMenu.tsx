@@ -7,17 +7,23 @@ import { useEffect, useRef, useState } from "react";
 import { logoutAction } from "@/app/(site)/login/actions";
 import { initialsOf } from "@/lib/format";
 
-// Only pages that exist. Chunks B–D add their own entries here.
-const ITEMS = [
-  { href: "/account", label: "Dashboard" },
-  { href: "/account/profile", label: "Edit Profile" },
-];
-
 export function AccountMenu({
   account,
 }: {
-  account: { name: string; email: string; href: string };
+  /** `href` is the signed-in role's own dashboard, from `homeFor()`.
+   *  `isOwner` adds the host dashboard, which no role value can imply. */
+  account: { name: string; email: string; href: string; isOwner: boolean };
 }) {
+  // Dashboard follows the platform role: staff land on /admin, everyone else on
+  // /account. Owner is additive rather than a role, so it gets its own entry
+  // when the account hosts. Edit Profile is deliberately fixed — /account/* is
+  // guarded by requireUser(), so it is shared by every role.
+  const items = [
+    { href: account.href, label: "Dashboard" },
+    ...(account.isOwner ? [{ href: "/owner", label: "Owner Dashboard" }] : []),
+    { href: "/account/profile", label: "Edit Profile" },
+  ];
+
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -74,7 +80,7 @@ export function AccountMenu({
           </div>
 
           <div className="py-1.5">
-            {ITEMS.map((item) => (
+            {items.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

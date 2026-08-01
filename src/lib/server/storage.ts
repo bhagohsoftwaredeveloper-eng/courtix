@@ -2,6 +2,7 @@ import "server-only";
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { prismaWaitlist } from "@/lib/server/waitlist-store";
 import type { Booking, OpenPlayJoin, WaitlistEntry } from "@/lib/types";
 
 /**
@@ -164,12 +165,20 @@ const jsonStorage: Storage = {
   },
 };
 
+/**
+ * The waitlist is served from MySQL unconditionally — `auth.ts` and
+ * `catalog.ts` already require `DATABASE_URL`, so an env flag here could only
+ * ever fail one way: unset in production, signups silently appended to a file
+ * that the next deploy discards.
+ *
+ * Bookings and open-play joins are still JSON; `STORAGE_DRIVER` governs those
+ * alone until they follow.
+ */
 export function getStorage(): Storage {
   switch (process.env.STORAGE_DRIVER) {
-    // case "firebase": return firebaseStorage;   // Phase 2
-    // case "postgres": return prismaStorage;     // Phase 2
+    // case "firebase": return { ...firebaseStorage, ...prismaWaitlist };  // Phase 2
     case "json":
     default:
-      return jsonStorage;
+      return { ...jsonStorage, ...prismaWaitlist };
   }
 }

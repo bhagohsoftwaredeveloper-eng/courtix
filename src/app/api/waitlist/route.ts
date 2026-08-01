@@ -30,24 +30,35 @@ export async function POST(request: Request) {
     return NextResponse.json({ position: 1337, alreadyJoined: false });
   }
 
-  const storage = getStorage();
+  try {
+    const storage = getStorage();
 
-  const existing = await storage.findWaitlistByEmail(data.email);
-  if (existing) {
-    return NextResponse.json({ position: existing.position, alreadyJoined: true });
+    const existing = await storage.findWaitlistByEmail(data.email);
+    if (existing) {
+      return NextResponse.json({ position: existing.position, alreadyJoined: true });
+    }
+
+    const entry = await storage.addWaitlist({
+      name: data.name,
+      email: data.email,
+      phone: data.phone || undefined,
+      city: data.city,
+      role: data.role,
+      sports: data.sports as SportSlug[],
+      notes: data.notes || undefined,
+    });
+
+    return NextResponse.json({ position: entry.position, alreadyJoined: false }, { status: 201 });
+  } catch (error) {
+    // The signup did not save. Say so plainly — the form's own catch block only
+    // fires on a network failure, and blaming the visitor's connection for our
+    // database being down sends them to reset their router.
+    console.error("waitlist: failed to store signup", error);
+    return NextResponse.json(
+      { message: "We couldn't save your spot right now. Please try again in a moment." },
+      { status: 503 },
+    );
   }
-
-  const entry = await storage.addWaitlist({
-    name: data.name,
-    email: data.email,
-    phone: data.phone || undefined,
-    city: data.city,
-    role: data.role,
-    sports: data.sports as SportSlug[],
-    notes: data.notes || undefined,
-  });
-
-  return NextResponse.json({ position: entry.position, alreadyJoined: false }, { status: 201 });
 }
 
 /**
@@ -58,18 +69,23 @@ export async function POST(request: Request) {
  * entries belongs behind admin auth (Phase 5 of the integration plan).
  */
 export async function GET() {
-  const entries = await getStorage().listWaitlist();
+  try {
+    const entries = await getStorage().listWaitlist();
 
-  const byCity: Record<string, number> = {};
-  const bySport: Record<string, number> = {};
-  for (const e of entries) {
-    byCity[e.city] = (byCity[e.city] ?? 0) + 1;
-    for (const s of e.sports) bySport[s] = (bySport[s] ?? 0) + 1;
+    const byCity: Record<string, number> = {};
+    const bySport: Record<string, number> = {};
+    for (const e of entries) {
+      byCity[e.city] = (byCity[e.city] ?? 0) + 1;
+      for (const s of e.sports) bySport[s] = (bySport[s] ?? 0) + 1;
+    }
+
+    return NextResponse.json({
+      total: entries.length,
+      byCity,
+      bySport,
+    });
+  } catch (error) {
+    console.error("waitlist: failed to read counts", error);
+    return NextResponse.json({ message: "Waitlist counts are unavailable." }, { status: 503 });
   }
-
-  return NextResponse.json({
-    total: entries.length,
-    byCity,
-    bySport,
-  });
 }

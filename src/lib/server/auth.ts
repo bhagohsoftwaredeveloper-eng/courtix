@@ -3,7 +3,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { Prisma, type UserRole } from "@prisma/client";
+import { Prisma, type PlatformRole } from "@prisma/client";
 
 import { SESSION_COOKIE, homeFor, isExpired } from "@/lib/auth-routes";
 import { db } from "@/lib/server/db";
@@ -20,8 +20,15 @@ export interface SessionUser {
   id: string;
   email: string;
   name: string;
-  role: UserRole;
+  role: PlatformRole;
   image: string | null;
+  /**
+   * Whether this account hosts courts — it has at least one
+   * OrganizationMember row. Derived here rather than stored on User so there
+   * is exactly one source of truth, and resolved in the session query that
+   * already runs so the portal switcher costs no extra round trip.
+   */
+  isOwner: boolean;
 }
 
 /** Only callable from a server action — Next forbids setting cookies while
@@ -51,7 +58,18 @@ export async function getSession(): Promise<SessionUser | null> {
     where: { sessionToken: token },
     select: {
       expires: true,
-      user: { select: { id: true, email: true, name: true, role: true, image: true } },
+      user: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          image: true,
+          // A count, not the rows: nothing here needs which organizations, only
+          // whether there are any.
+          _count: { select: { memberships: true } },
+        },
+      },
     },
   });
   if (!row) return null;
@@ -62,7 +80,8 @@ export async function getSession(): Promise<SessionUser | null> {
     return null;
   }
 
-  return row.user;
+  const { _count, ...user } = row.user;
+  return { ...user, isOwner: _count.memberships > 0 };
 }
 
 // Prisma's "record to delete does not exist" error — the only failure mode
@@ -95,11 +114,38 @@ export async function requireUser(): Promise<SessionUser> {
   return user;
 }
 
-export async function requireRole(...roles: UserRole[]): Promise<SessionUser> {
+/** Gate for /admin — platform staff only. */
+export async function requirePlatformRole(...roles: PlatformRole[]): Promise<SessionUser> {
   const user = await getSession();
   if (!user) redirect("/login");
   // Signed in as the wrong role: send them to their own dashboard rather than
   // rendering a dead end.
   if (!roles.includes(user.role)) redirect(homeFor(user.role));
   return user;
+}
+
+/**
+ * Gate for /owner. Returns the organization alongside the user, because every
+ * owner page needs it and the layout was querying for it separately anyway.
+ *
+ * A signed-in non-owner goes to /list-your-court rather than /account: that
+ * page tells them how to become a host, which is what they were reaching for.
+ */
+export async function requireOwner(): Promise<{
+  user: SessionUser;
+  org: { id: string; name: string };
+}> {
+  const user = await getSession();
+  if (!user) redirect("/login");
+
+  const membership = await db.organizationMember.findFirst({
+    where: { userId: user.id },
+    // An owner can belong to several orgs; order so the sidebar name is stable
+    // between requests. Choosing among them properly is a later-phase concern.
+    orderBy: { orgId: "asc" },
+    select: { org: { select: { id: true, name: true } } },
+  });
+  if (!membership) redirect("/list-your-court");
+
+  return { user, org: membership.org };
 }
